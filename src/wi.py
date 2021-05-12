@@ -66,11 +66,14 @@ class WAV:
         # Name of file.
         self.fn = None
 
-        # Array of data.
+        # Array of amplitudes.
         self.y = None
 
         # Sample rate.
         self.sr = None
+
+        # Duration.
+        self.dur = None
 
         # Spectres of two channels.
         self.sp = None
@@ -98,6 +101,9 @@ class WAV:
             # If there is some problem with file, just ignore it.
             return False
 
+        # Calculate duration.
+        self.dur = librosa.get_duration(y=self.y, sr=self.sr)
+
         return True
 
     # ----------------------------------------------------------------------------------------------
@@ -107,9 +113,13 @@ class WAV:
         Print summary.
         """
 
-        print('WAV audio record: fn      = {0}'.format(self.fn))
-        print('                  y.shape = {0}'.format(self.y.shape))
-        print('                  sr      = {0}'.format(self.sr))
+        print('WAV audio record: fn       = {0}'.format(self.fn))
+        print('                  y.shape  = {0}'.format(self.y.shape))
+        print('                  sr       = {0}'.format(self.sr))
+        print('                  dur      = {0}'.format(self.dur))
+
+        if self.sp is not None:
+            print('                  sp.shape = {0}'.format(self.sp.shape))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -120,8 +130,29 @@ class WAV:
 
         get_spectre = lambda d: librosa.amplitude_to_db(abs(librosa.stft(d)))
 
-        self.sp = [get_spectre(d) for d in self.y]
+        self.sp = np.array([get_spectre(d) for d in self.y])
 
+    # ----------------------------------------------------------------------------------------------
+
+    def time_to_specpos(self, tx):
+        """
+        Translate time position to specpos.
+        :param tx: time position
+        :return: specpos
+        """
+
+        return int(tx * (self.sp.shape[-1] / self.dur))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def specpos_to_time(self, specpos):
+        """
+        Translate position in spectre to time.
+        :param specpos: position in spectre
+        :return: time point
+        """
+
+        return specpos * (self.dur / self.sp.shape[-1])
 
 # ==================================================================================================
 
@@ -220,6 +251,7 @@ def test_load_wavs(dir):
     for fn in ld:
         w = WAV()
         if w.load(dir + '/' + fn):
+            w.get_spectres()
             w.summary()
 
 
@@ -228,13 +260,7 @@ def test_load_wavs(dir):
 
 if __name__ == '__main__':
 
-    # test_load_wavs('wavs/origin')
-
-    wav = WAV()
-    if wav.load('wavs/origin/0001.wav'):
-        print('OK')
-    print(wav.y)
-    wav.get_spectres()
+    test_load_wavs('wavs/origin')
 
     pass
 
