@@ -6,7 +6,10 @@ import os
 import pathlib
 import random
 import librosa
+import librosa.display
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 # ==================================================================================================
 
@@ -31,6 +34,23 @@ def split_array(a, start, part_len, offset):
 
     return r
 
+
+# --------------------------------------------------------------------------------------------------
+
+
+def show_plt(data, sr):
+    """
+    Show plot.
+    :param data: data for plotting
+    :param sr: sample rate
+    """
+
+    # Create figure and plot graphs onto it.
+    plt.figure(figsize=(20, 5))
+    librosa.display.specshow(data, sr=sr, x_axis='time', y_axis='hz', cmap='turbo')
+    plt.colorbar(format='%+02.0f dB')
+
+
 # ==================================================================================================
 
 
@@ -51,6 +71,9 @@ class WAV:
 
         # Sample rate.
         self.sr = None
+
+        # Spectres of two channels.
+        self.sp = None
 
         pass
 
@@ -88,6 +111,18 @@ class WAV:
         print('                  y.shape = {0}'.format(self.y.shape))
         print('                  sr      = {0}'.format(self.sr))
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_spectres(self):
+        """
+        Get spectres.
+        """
+
+        get_spectre = lambda d: librosa.amplitude_to_db(abs(librosa.stft(d)))
+
+        self.sp = [get_spectre(d) for d in self.y]
+
+
 # ==================================================================================================
 
 
@@ -118,6 +153,7 @@ class DataFactory:
         else:
             raise Exception('only mono is supported')
 
+
 # ==================================================================================================
 
 
@@ -141,13 +177,15 @@ class DefectWrongSide:
         part_of_test_data = 0.2
 
         # Load defect files.
-        defect_x = [DataFactory.load_wav_mono_chunks(df, start, part_length, offset) for df in defect_files]
+        defect_x = [DataFactory.load_wav_mono_chunks(df, start, part_length, offset) for df in
+                    defect_files]
         defect_x = np.concatenate(defect_x, axis=0)
         defect_y = np.ones(defect_x.shape[0])
         defect_data = list(zip(defect_x, defect_y))
 
         # Load no defect files.
-        no_defect_x = [DataFactory.load_wav_mono_chunks(df, start, part_length, offset) for df in no_defect_files]
+        no_defect_x = [DataFactory.load_wav_mono_chunks(df, start, part_length, offset) for df in
+                       no_defect_files]
         no_defect_x = np.concatenate(no_defect_x, axis=0)
         no_defect_y = np.zeros(no_defect_x.shape[0])
         no_defect_data = list(zip(no_defect_x, no_defect_y))
@@ -164,6 +202,7 @@ class DefectWrongSide:
         bi = int(len(x) * part_of_test_data)
 
         return (np.array(x[bi:]), np.array(y[bi:])), (np.array(x[:bi]), np.array(y[:bi]))
+
 
 # ==================================================================================================
 
@@ -183,12 +222,19 @@ def test_load_wavs(dir):
         if w.load(dir + '/' + fn):
             w.summary()
 
+
 # --------------------------------------------------------------------------------------------------
 
 
 if __name__ == '__main__':
 
-    test_load_wavs('wavs/origin')
+    # test_load_wavs('wavs/origin')
+
+    wav = WAV()
+    if wav.load('wavs/origin/0001.wav'):
+        print('OK')
+    print(wav.y)
+    wav.get_spectres()
 
     pass
 
