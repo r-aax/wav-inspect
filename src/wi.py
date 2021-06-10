@@ -24,8 +24,11 @@ def indices_slice_array(ar_len, start, part_len, step):
     :return: array of first indices
     """
 
-    idx = [(i, i + part_len) for i in range(start, ar_len - part_len + 1)]
-    return list(filter(lambda t: (t[0] - start) % step == 0, idx))
+    idx = [(i, i + part_len)
+           for i in range(start, ar_len - part_len + 1)
+           if (i - start) % step == 0]
+
+    return idx
 
 # --------------------------------------------------------------------------------------------------
 
