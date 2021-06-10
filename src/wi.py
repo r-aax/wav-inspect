@@ -30,21 +30,6 @@ def indices_slice_array(ar_len, start, part_len, step):
 
     return idx
 
-# --------------------------------------------------------------------------------------------------
-
-
-def show_plt(data, sr):
-    """
-    Show plot.
-    :param data: data for plotting
-    :param sr: sample rate
-    """
-
-    # Create figure and plot graphs onto it.
-    plt.figure(figsize=(20, 5))
-    librosa.display.specshow(data, sr=sr, x_axis='time', y_axis='hz', cmap='turbo')
-    plt.colorbar(format='%+02.0f dB')
-
 
 # ==================================================================================================
 
@@ -151,6 +136,21 @@ class WAV:
         """
 
         return specpos * (self.Duration / self.Spectres.shape[-1])
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectre(self, idx):
+        """
+        Show spectre.
+        :param idx: spectre index
+        """
+
+        # Create figure and plot graphs onto it.
+        plt.figure(figsize=(20, 5))
+        librosa.display.specshow(self.Spectres[idx],
+                                 sr=self.SampleRate,
+                                 x_axis='time', y_axis='hz', cmap='turbo')
+        plt.colorbar(format='%+02.0f dB')
 
 # ==================================================================================================
 
