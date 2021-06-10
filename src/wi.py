@@ -14,26 +14,18 @@ import matplotlib.pyplot as plt
 # ==================================================================================================
 
 
-def split_array(a, start, part_len, offset):
+def indices_slice_array(ar_len, start, part_len, step):
     """
-    Split array into parts.
-    :param a: array
+    Get indices for array slicing.
+    :param ar_len: array length
     :param start: start position
-    :param part_len: length of each part
-    :param offset: offset between parts
-    :return: array of parts (two dimensional numpy array)
+    :param part_len: single part length
+    :param step: step between parts
+    :return: array of first indices
     """
 
-    # Get set of indices.
-    ln = len(a)
-    idx = filter(lambda i: ((i - start) % offset == 0) and (i + part_len <= ln),
-                 range(ln))
-
-    # Get array slices.
-    r = np.array([a[i: i + part_len] for i in idx])
-
-    return r
-
+    idx = [(i, i + part_len) for i in range(start, ar_len - part_len + 1)]
+    return list(filter(lambda t: (t[0] - start) % step == 0, idx))
 
 # --------------------------------------------------------------------------------------------------
 
@@ -260,7 +252,12 @@ def test_load_wavs(dir):
 
 if __name__ == '__main__':
 
-    test_load_wavs('wavs/origin')
+    # Tests.
+    # indices_slice_array
+    assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
+    assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
+
+    # test_load_wavs('wavs/origin')
 
     pass
 
