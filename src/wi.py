@@ -115,6 +115,33 @@ def min_without_some(ar, part=0.03):
     return cp[i]
 
 
+# --------------------------------------------------------------------------------------------------
+
+def apply_array_lo_bound(a, lo_bound):
+    """
+    Apply low bound to array.
+    :param a: array
+    :param lo_bound: low bound
+    :return: new array after low bound correction
+    """
+
+    return [max(ai, lo_bound) for ai in a]
+
+# --------------------------------------------------------------------------------------------------
+
+
+def shift_array_to_min(a):
+    """
+    Shift array to minimum value.
+    :param a: array
+    :return: shifted array
+    """
+
+    m = min(a)
+
+    return [ai - m for ai in a]
+
+
 # ==================================================================================================
 
 
@@ -122,19 +149,19 @@ class Defect:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, record_name, channel, defect_coords, defect_name):
+    def __init__(self, record_name, channel, defect_name, defect_coords):
         """
         Defect.
         :param record_name: record name
         :param channel: channel
-        :param defect_coords: defect coordinates
         :param defect_name: defect name
+        :param defect_coords: defect coordinates
         """
 
         self.RecordName = record_name
         self.Channel = channel
-        self.DefectCoords = defect_coords
         self.DefectName = defect_name
+        self.DefectCoords = defect_coords
 
     # ----------------------------------------------------------------------------------------------
 
@@ -145,9 +172,10 @@ class Defect:
         """
 
         if type(self.DefectCoords) is tuple:
-            defect_coords_str = '{0} - {1}'.format(self.DefectCoords[0], self.DefectCoords[1])
+            defect_coords_str = '{0:.3f} s - {1:.3f} s'.format(self.DefectCoords[0],
+                                                               self.DefectCoords[1])
         else:
-            defect_coords_str = '{0}'.format(self.DefectCoords)
+            defect_coords_str = '{0:.3f} s'.format(self.DefectCoords)
 
         return 'Defect: {0} (ch {1}) : {2} ({3})'.format(self.RecordName, self.Channel,
                                                          self.DefectName, defect_coords_str)
@@ -185,6 +213,15 @@ class WAV:
         # If filename if given - load it.
         if filename is not None:
             self.load(filename)
+
+    # ----------------------------------------------------------------------------------------------
+
+    def is_ok(self):
+        """
+        :return: True - if it is a correct record, and it is loaded, False - otherwise
+        """
+
+        return self.Y is not None
 
     # ----------------------------------------------------------------------------------------------
 
@@ -465,13 +502,35 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def detect_defect_min_power(self):
+    def detect_defect_min_power(self, acc=5.0, lo_bound=-50.0):
         """
         Detect defect due to min power.
-        :return:
+        :param acc: accuracy (in DB) - parameter for ignoring fluctuations in min power values
+        :param acc: lo_bound (in DB) - minimum power value (if value is less it is ignored)
+        :return: defects list
         """
 
-        return [Defect(self.FileName, 0, (1.0, 2.0), 'bad')]
+        dfs = []
+
+        for idx in [0, 1]:
+            d = self.get_min_power_data(idx)
+            sd = shift_array_to_min(apply_array_lo_bound(d, lo_bound))
+            for (i, sdi) in enumerate(sd):
+                if sdi > acc:
+                    df = Defect(self.FileName, idx, 'min_power', self.specpos_to_time(i))
+                    dfs.append(df)
+
+        return dfs
+
+    # ----------------------------------------------------------------------------------------------
+
+    def detect_defects(self):
+        """
+        Detect defects.
+        :return: defects list
+        """
+
+        return self.detect_defect_min_power()
 
 # ==================================================================================================
 
@@ -489,12 +548,18 @@ if __name__ == '__main__':
 
     # Main test.
 
-    test = 'wavs/origin/0001.wav'
-    wav = WAV(test)
-    wav.generate_spectres()
-    wav.summary()
+    directory = 'wavs/origin'
+    tests = os.listdir('wavs/origin')
+    print(tests)
+    defects = []
 
-    defects = wav.detect_defect_min_power()
+    for test in tests:
+        print('... process {0}'.format(test))
+        wav = WAV('{0}/{1}'.format(directory, test))
+        if wav.is_ok():
+            wav.generate_spectres()
+            defects = defects + wav.detect_defects()
+
     for defect in defects:
         print('  {0}'.format(defect))
 
