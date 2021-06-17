@@ -32,6 +32,42 @@ def indices_slice_array(ar_len, start, part_len, step):
     return idx
 
 
+# --------------------------------------------------------------------------------------------------
+
+
+def show_graph(data, figsize=(20, 8),
+               style='r', linewidth=2.0,
+               title='title', xlabel='xlabel', ylabel='ylabel',
+               show_grid='true'):
+    """
+    Show data on graph.
+    :param data: data
+    :param figsize: figure size
+    :param style: line style
+    :param linewidth: line width
+    :param title: title
+    :param xlabel: X label
+    :param ylabel: Y label
+    :param show_grid: flag for show grid
+    """
+
+    # Code for examples:
+    # https://pythonru.com/biblioteki/pyplot-uroki
+
+    # Style:
+    # colors - 'b', 'g', 'r', 'y'.
+    # markers - '*', '^', 's'.
+    # line types - '--', '-.'.
+
+    plt.figure(figsize=figsize)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.grid(show_grid)
+    plt.plot(data, style, linewidth=linewidth)
+    plt.show()
+
+
 # ==================================================================================================
 
 
