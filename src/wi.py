@@ -183,18 +183,47 @@ class WAV:
         spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
                                                                sr=self.SampleRate)[0]
 
+        # Normalize data.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
         # Create figure and plot on it.
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
+        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
+        plt.plot(t, normalize(spectral_centroids), color='b')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_rolloff(self, idx, figsize=(20, 8)):
+        """
+        Show spectral rolloff.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        # Code source:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Calculate centroid.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+                                                               sr=self.SampleRate)[0]
+
+        # Calculate rolloff.
+        spectral_rolloff = librosa.feature.spectral_rolloff(self.Y[idx] + 0.01,
+                                                            sr=self.SampleRate)[0]
 
         # Normalize data.
         def normalize(x, axis=0):
             return sklearn.preprocessing.minmax_scale(x, axis=axis)
 
-        # Create centroid with wave.
+        # Create figure and plot.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
         librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
-        plt.plot(t, normalize(spectral_centroids), color='b')
+        plt.plot(t, normalize(spectral_rolloff), color='r')
 
 # ==================================================================================================
 
