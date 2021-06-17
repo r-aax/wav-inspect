@@ -99,7 +99,7 @@ class WAV:
         print('WAV audio record: FileName       = {0}'.format(self.FileName))
         print('                  Y.shape        = {0}'.format(self.Y.shape))
         print('                  SampleRate     = {0}'.format(self.SampleRate))
-        print('                  Duration       = {0}'.format(self.Duration))
+        print('                  Duration       = {0:.3f} s'.format(self.Duration))
 
         if self.Spectres is not None:
             print('                  Spectres.shape = {0}'.format(self.Spectres.shape))
@@ -139,14 +139,28 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_spectre(self, idx):
+    def show_wave(self, idx, figsize=(20, 8)):
+        """
+        Show wave of the sound.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        # Create figure and plot graph on it.
+        plt.figure(figsize=figsize)
+        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate)
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectre(self, idx, figsize=(20, 8)):
         """
         Show spectre.
         :param idx: spectre index
+        :param figsize: figure size
         """
 
         # Create figure and plot graphs onto it.
-        plt.figure(figsize=(20, 10))
+        plt.figure(figsize=figsize)
         librosa.display.specshow(self.Spectres[idx],
                                  sr=self.SampleRate,
                                  x_axis='time', y_axis='hz', cmap='turbo')
