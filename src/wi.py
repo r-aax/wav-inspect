@@ -5,6 +5,7 @@ WAV inspect functionality.
 import os
 import pathlib
 import random
+import sklearn
 import librosa
 import librosa.display
 import numpy as np
@@ -165,6 +166,35 @@ class WAV:
                                  sr=self.SampleRate,
                                  x_axis='time', y_axis='hz', cmap='turbo')
         plt.colorbar(format='%+02.0f dB')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_centroid(self, idx, figsize=(20, 8)):
+        """
+        Show spectral centroid.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        # Code source:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Calculate centroid.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+                                                               sr=self.SampleRate)[0]
+
+        # Create figure and plot on it.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
+
+        # Normalize data.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
+        # Create centroid with wave.
+        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
+        plt.plot(t, normalize(spectral_centroids), color='b')
 
 # ==================================================================================================
 
