@@ -225,6 +225,43 @@ class WAV:
         librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
         plt.plot(t, normalize(spectral_rolloff), color='r')
 
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_bandwidth(self, idx, figsize=(20, 8)):
+        """
+        Show spectral bandwidth.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        # Code source:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Calculate centroid.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+                                                               sr=self.SampleRate)[0]
+
+        # Construct bandwidth.
+        x = self.Y[0]
+        sr = self.SampleRate
+        spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr)[0]
+        spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=3)[0]
+        spectral_bandwidth_4 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=4)[0]
+
+        # Normalize data.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
+        # Create figure and plot on it.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
+        librosa.display.waveplot(x, sr=sr, alpha=0.4)
+        plt.plot(t, normalize(spectral_bandwidth_2), color='r')
+        plt.plot(t, normalize(spectral_bandwidth_3), color='g')
+        plt.plot(t, normalize(spectral_bandwidth_4), color='y')
+        plt.legend(('p = 2', 'p = 3', 'p = 4'))
+
 # ==================================================================================================
 
 
