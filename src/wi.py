@@ -155,6 +155,11 @@ class WAV:
         :return: True - if loading is completed, False - if loading faults.
         """
 
+        # Check for filename.
+        if not os.path.isfile(filename):
+            # print('No such file ({0}).'.format(filename))
+            return False
+
         # First of all, check file extension.
         if pathlib.Path(filename).suffix != '.wav':
             return False
@@ -410,7 +415,7 @@ class WAV:
 
 if __name__ == '__main__':
 
-    # Tests.
+    # Unit tests.
 
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
@@ -418,5 +423,12 @@ if __name__ == '__main__':
 
     # min_without_part
     assert min_without_some([2, 1, 3, 5, 2], 0.0) == 1
+
+    # Main test.
+
+    test = 'wavs/origin/0001.wav'
+    wav = WAV(test)
+    wav.generate_spectres()
+    wav.summary()
 
 # ==================================================================================================
