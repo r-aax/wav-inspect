@@ -111,7 +111,7 @@ class WAV:
         Generate spectres.
         """
 
-        generate_spectre = lambda d: librosa.amplitude_to_db(abs(librosa.stft(d)))
+        generate_spectre = lambda d: librosa.amplitude_to_db(abs(librosa.stft(d, n_fft=2048)))
 
         self.Spectres = np.array([generate_spectre(d) for d in self.Y])
 
@@ -146,7 +146,7 @@ class WAV:
         """
 
         # Create figure and plot graphs onto it.
-        plt.figure(figsize=(20, 5))
+        plt.figure(figsize=(20, 10))
         librosa.display.specshow(self.Spectres[idx],
                                  sr=self.SampleRate,
                                  x_axis='time', y_axis='hz', cmap='turbo')
