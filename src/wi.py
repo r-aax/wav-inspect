@@ -5,14 +5,28 @@ WAV inspect functionality.
 import os
 import pathlib
 import random
+import operator
 import sklearn
-import librosa
-import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
-
+import librosa
+import librosa.display
 
 # ==================================================================================================
+
+
+def zipwith(a, b, f):
+    """
+    Zip two lists with given function.
+    :param a: first list
+    :param b: second list
+    :param f: zip function
+    """
+
+    return [f(ai, bi) for (ai, bi) in zip(a, b)]
+
+
+# --------------------------------------------------------------------------------------------------
 
 
 def indices_slice_array(ar_len, start, part_len, step):
@@ -37,14 +51,14 @@ def indices_slice_array(ar_len, start, part_len, step):
 
 def show_graph(data, figsize=(20, 8),
                style='r', linewidth=2.0,
-               title='title', xlabel='xlabel', ylabel='ylabel',
+               title='title', xlabel='', ylabel='',
                show_grid='true'):
     """
     Show data on graph.
-    :param data: data
+    :param data: data, may be array of datas
     :param figsize: figure size
-    :param style: line style
-    :param linewidth: line width
+    :param style: line style, may be array of styles
+    :param linewidth: line width, may be array of linewidths
     :param title: title
     :param xlabel: X label
     :param ylabel: Y label
@@ -64,9 +78,39 @@ def show_graph(data, figsize=(20, 8),
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.grid(show_grid)
-    plt.plot(data, style, linewidth=linewidth)
+
+    # Plot all.
+    # Is the single data set is given, the style is just a string.
+    if type(style) is str:
+
+        # Single data set.
+        plt.plot(data, style, linewidth=linewidth)
+
+    elif type(style) is list:
+
+        # Multiple datasets.
+        for i in range(len(style)):
+            plt.plot(data[i], style[i], linewidth=linewidth[i])
+
     plt.show()
 
+
+# --------------------------------------------------------------------------------------------------
+
+
+def min_without_some(ar, part=0.03):
+    """
+    Minimum value from array with ignoring part of values.
+    :param ar: array
+    :param part: part for ignoring
+    :return: minimum values with ignoring 'part' of array
+    """
+
+    i = int(len(ar) * part)
+    cp = ar.copy()
+    cp.sort()
+
+    return cp[i]
 
 # ==================================================================================================
 
@@ -94,6 +138,8 @@ class WAV:
         self.Duration = None
 
         # Spectres of two channels.
+        # 3-dimensional array:
+        #   (channels count) * (Y lines) * (X lines)
         self.Spectres = None
 
         # If filename if given - load it.
@@ -278,7 +324,7 @@ class WAV:
                                                                sr=self.SampleRate)[0]
 
         # Construct bandwidth.
-        x = self.Y[0]
+        x = self.Y[idx]
         sr = self.SampleRate
         spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr)[0]
         spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=3)[0]
@@ -298,15 +344,79 @@ class WAV:
         plt.plot(t, normalize(spectral_bandwidth_4), color='y')
         plt.legend(('p = 2', 'p = 3', 'p = 4'))
 
+    # ----------------------------------------------------------------------------------------------
+
+    def normalize_spectre_value(self, idx):
+        """
+        Value for normalize spectre to shift minimum power to zero db.
+        :param idx: indxes of amplitudes array
+        :return: normalize spectre value
+        """
+
+        return -self.Spectres[idx].min()
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_total_power(self, idx, figsize=(20, 8)):
+        """
+        Show graph spectre total power.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        m = self.Spectres[idx].transpose()
+        d = [sum(mi) for mi in m]
+        show_graph(d, figsize=figsize, title='Spectre Total Power')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_min_max_power(self, idx, figsize=(20, 8)):
+        """
+        Show graph spectre minimum and maximum power.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        m = self.Spectres[idx].transpose()
+        d_min = [min_without_some(mi) for mi in m]
+        d_max = [max(mi) for mi in m]
+        show_graph([d_min, d_max], figsize=figsize,
+                   title='Spectre Min/Max Power',
+                   style=['b', 'r'], linewidth=[2.0, 2.0])
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_total_power_with_high_accent(self, idx, figsize=(20, 8)):
+        """
+        Show graph spectre total power when high frequences are taken with big weights.
+        :param idx: index of amplitudes array
+        :param figsize: figure size
+        """
+
+        n = self.normalize_spectre_value(idx)
+        m = self.Spectres[idx].transpose()
+
+        # Weights.
+        w = [i * i for i in range(len(m[0]))]
+
+        # Form data for plot.
+        d = [sum(zipwith(c, w, lambda ci, wi: (ci + n) * wi))
+             for c in m]
+
+        show_graph(d, figsize=figsize, title='Spectre Total Power With High Accent')
+
 # ==================================================================================================
 
 
 if __name__ == '__main__':
 
     # Tests.
+
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
 
+    # min_without_part
+    assert min_without_some([2, 1, 3, 5, 2], 0.0) == 1
 
 # ==================================================================================================
