@@ -502,22 +502,32 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def detect_defect_min_power(self, acc=5.0, lo_bound=-50.0):
+    def detect_defect_min_power_short_leap(self,
+                                           leap_threshold=5.0,
+                                           power_lo_bound=-50.0):
         """
         Detect defect due to min power.
-        :param acc: accuracy (in DB) - parameter for ignoring fluctuations in min power values
-        :param acc: lo_bound (in DB) - minimum power value (if value is less it is ignored)
+        :param leap_threshold: threshold for leap detection (DB)
+        :param power_lo_bound: low bound of power for analysis (DB)
         :return: defects list
         """
 
         dfs = []
 
         for idx in [0, 1]:
-            d = self.get_min_power_data(idx)
-            sd = shift_array_to_min(apply_array_lo_bound(d, lo_bound))
-            for (i, sdi) in enumerate(sd):
-                if sdi > acc:
-                    df = Defect(self.FileName, idx, 'min_power', self.specpos_to_time(i))
+
+            # Process data.
+            d1 = self.get_min_power_data(idx)
+            d2 = apply_array_lo_bound(d1, power_lo_bound)
+            d3 = shift_array_to_min(d2)
+
+            # Leap markers.
+            leap_markers = [d3i > leap_threshold for d3i in d3]
+
+            for (i, lmi) in enumerate(leap_markers):
+                if lmi:
+                    df = Defect(self.FileName, idx,
+                                'min_power_short_leap', self.specpos_to_time(i))
                     dfs.append(df)
 
         return dfs
@@ -530,7 +540,7 @@ class WAV:
         :return: defects list
         """
 
-        return self.detect_defect_min_power()
+        return self.detect_defect_min_power_short_leap()
 
 # ==================================================================================================
 
@@ -549,7 +559,8 @@ if __name__ == '__main__':
     # Main test.
 
     directory = 'wavs/origin'
-    tests = os.listdir('wavs/origin')
+    # tests = os.listdir('wavs/origin')
+    tests = ['0001.wav']
     print(tests)
     defects = []
 
