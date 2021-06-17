@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import librosa
 import librosa.display
 
+
 # ==================================================================================================
 
 
@@ -21,6 +22,7 @@ def zipwith(a, b, f):
     :param a: first list
     :param b: second list
     :param f: zip function
+    :return: zipped arrays
     """
 
     return [f(ai, bi) for (ai, bi) in zip(a, b)]
@@ -111,6 +113,44 @@ def min_without_some(ar, part=0.03):
     cp.sort()
 
     return cp[i]
+
+
+# ==================================================================================================
+
+
+class Defect:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self, record_name, channel, defect_coords, defect_name):
+        """
+        Defect.
+        :param record_name: record name
+        :param channel: channel
+        :param defect_coords: defect coordinates
+        :param defect_name: defect name
+        """
+
+        self.RecordName = record_name
+        self.Channel = channel
+        self.DefectCoords = defect_coords
+        self.DefectName = defect_name
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __repr__(self):
+        """
+        String representation.
+        :return: string
+        """
+
+        if type(self.DefectCoords) is tuple:
+            defect_coords_str = '{0} - {1}'.format(self.DefectCoords[0], self.DefectCoords[1])
+        else:
+            defect_coords_str = '{0}'.format(self.DefectCoords)
+
+        return 'Defect: {0} (ch {1}) : {2} ({3})'.format(self.RecordName, self.Channel,
+                                                         self.DefectName, defect_coords_str)
 
 # ==================================================================================================
 
@@ -375,6 +415,19 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_min_power_data(self, idx):
+        """
+        Get min power data.
+        :param idx: index of amplitudes array
+        :return: min power data
+        """
+
+        m = self.Spectres[idx].transpose()
+
+        return [min_without_some(mi) for mi in m]
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_graph_spectre_min_max_power(self, idx, figsize=(20, 8)):
         """
         Show graph spectre minimum and maximum power.
@@ -410,6 +463,16 @@ class WAV:
 
         show_graph(d, figsize=figsize, title='Spectre Total Power With High Accent')
 
+    # ----------------------------------------------------------------------------------------------
+
+    def detect_defect_min_power(self):
+        """
+        Detect defect due to min power.
+        :return:
+        """
+
+        return [Defect(self.FileName, 0, (1.0, 2.0), 'bad')]
+
 # ==================================================================================================
 
 
@@ -430,5 +493,9 @@ if __name__ == '__main__':
     wav = WAV(test)
     wav.generate_spectres()
     wav.summary()
+
+    defects = wav.detect_defect_min_power()
+    for defect in defects:
+        print('  {0}'.format(defect))
 
 # ==================================================================================================
