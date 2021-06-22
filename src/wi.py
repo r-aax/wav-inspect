@@ -161,16 +161,20 @@ def shift_array_to_min(a):
 
 
 class Defect:
+    """
+    Дефект.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self, record_name, channel, defect_name, defect_coords):
         """
-        Defect.
-        :param record_name: record name
-        :param channel: channel
-        :param defect_name: defect name
-        :param defect_coords: defect coordinates
+        Конструктор дефекта.
+
+        :param record_name:   Имя записи.
+        :param channel:       Номер канала.
+        :param defect_name:   Имя дефекта.
+        :param defect_coords: Координаты дефекта.
         """
 
         self.RecordName = record_name
@@ -182,8 +186,9 @@ class Defect:
 
     def __repr__(self):
         """
-        String representation.
-        :return: string
+        Получение строкового представления дефекта.
+
+        :return: Строка.
         """
 
         if type(self.DefectCoords) is tuple:
