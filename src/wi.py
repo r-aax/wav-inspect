@@ -237,6 +237,32 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def time_to_specpos(self, tx):
+        """
+        Перевод точки времени в точку в матрице спектра.
+
+        :param tx: Точка сремени.
+
+        :return: Точка в спектре.
+        """
+
+        return int(tx * (self.Spectre.shape[-1] / self.Duration))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def specpos_to_time(self, specpos):
+        """
+        Перевод точки спектра в точку времени.
+
+        :param specpos: Точка в спектре.
+
+        :return: Точка времени.
+        """
+
+        return specpos * (self.Duration / self.Spectre.shape[-1])
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_wave(self, figsize=(20, 8)):
         """
         Демонстрация звуковой волны.
@@ -351,6 +377,34 @@ class Channel:
         plt.plot(t, normalize(sb_3), color='g')
         plt.plot(t, normalize(sb_4), color='y')
         plt.legend(('p = 2', 'p = 3', 'p = 4'))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_total_power(self, figsize=(20, 8)):
+        """
+        Демонстрация графика суммарной энергии спектра.
+
+        :param figsize: Размер картинки.
+        """
+
+        show_graph([sum(tsi) for tsi in self.TSpectre],
+                   figsize=figsize, title='Spectre Total Power')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_min_max_power(self, ignore_min_powers_part, figsize=(20, 8)):
+        """
+        Демонстрация графиков минимальной и максимальной силы звука.
+
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param figsize:                Размер картинки.
+        """
+
+        d_min = [min_without_some(tsi, part=ignore_min_powers_part) for tsi in self.TSpectre]
+        d_max = [max(tsi) for tsi in self.TSpectre]
+        show_graph([d_min, d_max], figsize=figsize,
+                   title='Spectre Min/Max Power',
+                   style=['b', 'r'], linewidth=[2.0, 2.0])
 
 # ==================================================================================================
 
@@ -494,59 +548,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def time_to_specpos(self, tx):
-        """
-        Перевод точки времени в точку в матрице спектра.
-
-        :param tx: Точка сремени.
-
-        :return: Точка в спектре.
-        """
-
-        return int(tx * (self.Channels[0].Spectre.shape[-1] / self.Duration))
-
-    # ----------------------------------------------------------------------------------------------
-
-    def specpos_to_time(self, specpos):
-        """
-        Перевод точки спектра в точку времени.
-
-        :param specpos: Точка в спектре.
-
-        :return: Точка времени.
-        """
-
-        return specpos * (self.Duration / self.Channels[0].Spectre.shape[-1])
-
-    # ----------------------------------------------------------------------------------------------
-
-    def normalize_spectre_value(self, idx):
-        """
-        Значение для нормализации спектра.
-
-        :param idx: Индекс спектра.
-
-        :return: Значение для нормализации.
-        """
-
-        return -self.Channels[idx].Spectre.min()
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_graph_spectre_total_power(self, idx, figsize=(20, 8)):
-        """
-        Демонстрация графика суммарной энергии спектра.
-
-        :param idx:     Номер канала.
-        :param figsize: Размер картинки.
-        """
-
-        m = self.Channels[idx].Spectre.transpose()
-        d = [sum(mi) for mi in m]
-        show_graph(d, figsize=figsize, title='Spectre Total Power')
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_min_power_data(self, idx, ignore_min_powers_part):
         """
         Получение данных минимальной энергии.
@@ -560,24 +561,6 @@ class WAV:
         m = self.Channels[idx].Spectre.transpose()
 
         return [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_graph_spectre_min_max_power(self, idx, ignore_min_powers_part, figsize=(20, 8)):
-        """
-        Демонстрация графиков минимальной и максимальной силы звука.
-
-        :param idx:                    Номер канала.
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
-        :param figsize:                Размер картинки.
-        """
-
-        m = self.Channels[idx].Spectre.transpose()
-        d_min = [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
-        d_max = [max(mi) for mi in m]
-        show_graph([d_min, d_max], figsize=figsize,
-                   title='Spectre Min/Max Power',
-                   style=['b', 'r'], linewidth=[2.0, 2.0])
 
     # ----------------------------------------------------------------------------------------------
 
@@ -623,28 +606,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_graph_spectre_total_power_with_high_accent(self, idx, figsize=(20, 8)):
-        """
-        Показ графика суммарной силы с акцентом на высокие частоты.
-
-        :param idx:     Номер канала.
-        :param figsize: Размер картинки.
-        """
-
-        n = self.normalize_spectre_value(idx)
-        m = self.Channels[idx].Spectre.transpose()
-
-        # Веса по частотам.
-        w = [i * i for i in range(len(m[0]))]
-
-        # Формируем данные для графика.
-        d = [sum(zipwith(c, w, lambda ci, wi: (ci + n) * wi))
-             for c in m]
-
-        show_graph(d, figsize=figsize, title='Spectre Total Power With High Accent')
-
-    # ----------------------------------------------------------------------------------------------
-
     def detect_defect_min_power_short_leap(self,
                                            ignore_min_powers_part=0.01,
                                            power_lo_bound=-50.0,
@@ -686,7 +647,7 @@ class WAV:
                     m_right = leap_markers[i + leap_half_width]
                     if m_0 and (not m_left) and (not m_right):
                         df = Defect(self.FileName, idx,
-                                    'min_power_short_leap', self.specpos_to_time(i))
+                                    'min_power_short_leap', self.Channels[0].specpos_to_time(i))
                         dfs.append(df)
 
         return dfs
