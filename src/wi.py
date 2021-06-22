@@ -100,7 +100,7 @@ def show_graph(data, figsize=(20, 8),
 # --------------------------------------------------------------------------------------------------
 
 
-def min_without_some(ar, part=0.03):
+def min_without_some(ar, part):
     """
     Minimum value from array with ignoring part of values.
     :param ar: array
@@ -452,32 +452,77 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_min_power_data(self, idx):
+    def get_min_power_data(self, idx, ignore_min_powers_part):
         """
         Get min power data.
         :param idx: index of amplitudes array
+        :param ignore_min_powers_part: part of min values in column those are ignored
+                                       when we detect minimum value in column
         :return: min power data
         """
 
         m = self.Spectres[idx].transpose()
 
-        return [min_without_some(mi) for mi in m]
+        return [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_graph_spectre_min_max_power(self, idx, figsize=(20, 8)):
+    def show_graph_spectre_min_max_power(self, idx, ignore_min_powers_part, figsize=(20, 8)):
         """
         Show graph spectre minimum and maximum power.
         :param idx: index of amplitudes array
+        :param ignore_min_powers_part: part of min values in column those are ignored
+                                       when we detect minimum value in column
         :param figsize: figure size
         """
 
         m = self.Spectres[idx].transpose()
-        d_min = [min_without_some(mi) for mi in m]
+        d_min = [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
         d_max = [max(mi) for mi in m]
         show_graph([d_min, d_max], figsize=figsize,
                    title='Spectre Min/Max Power',
                    style=['b', 'r'], linewidth=[2.0, 2.0])
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_min_power_leap_markers(self, idx,
+                                   ignore_min_powers_part, power_lo_bound, leap_threshold):
+        """
+        Get min power leap markers.
+        :param idx: index of amplitudes array
+        :param ignore_min_powers_part: part of min values in column those are ignored
+                                       when we detect minimum value in column
+        :param power_lo_bound: low bound of power for analysis (in DB)
+        :param leap_threshold: threshold for leap detection (in DB)
+        :return: array of leap markers
+        """
+
+        d1 = self.get_min_power_data(idx, ignore_min_powers_part)
+        d2 = apply_array_lo_bound(d1, power_lo_bound)
+        d3 = shift_array_to_min(d2)
+
+        return [int(d3i > leap_threshold) for d3i in d3]
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_min_power_leap_markers(self, idx,
+                                                  ignore_min_powers_part, power_lo_bound,
+                                                  leap_threshold, figsize=(20, 8)):
+        """
+        Show graph with min power leap markers.
+        :param idx: index of amplitudes array
+        :param ignore_min_powers_part: part of min values in column those are ignored
+                                       when we detect minimum value in column
+        :param power_lo_bound: low bound of power for analysis (in DB)
+        :param leap_threshold: threshold for leap detection (in DB)
+        :param figsize: figure size
+        """
+
+        m = self.Spectres[idx].transpose()
+        d = self.get_min_power_leap_markers(idx, ignore_min_powers_part,
+                                            power_lo_bound, leap_threshold)
+        show_graph(d, figsize=figsize,
+                   title='Spectre Min Power Leap Markers')
 
     # ----------------------------------------------------------------------------------------------
 
@@ -503,12 +548,17 @@ class WAV:
     # ----------------------------------------------------------------------------------------------
 
     def detect_defect_min_power_short_leap(self,
+                                           ignore_min_powers_part=0.01,
+                                           power_lo_bound=-50.0,
                                            leap_threshold=5.0,
-                                           power_lo_bound=-50.0):
+                                           leap_half_width=2):
         """
         Detect defect due to min power.
-        :param leap_threshold: threshold for leap detection (DB)
-        :param power_lo_bound: low bound of power for analysis (DB)
+        :param ignore_min_powers_part: part of min values in column those are ignored
+                                       when we detect minimum value in column
+        :param power_lo_bound: low bound of power for analysis (in DB)
+        :param leap_threshold: threshold for leap detection (in DB)
+        :param leap_half_width: half width for leap (in frames)
         :return: defects list
         """
 
@@ -517,18 +567,28 @@ class WAV:
         for idx in [0, 1]:
 
             # Process data.
-            d1 = self.get_min_power_data(idx)
+            d1 = self.get_min_power_data(idx, ignore_min_powers_part)
             d2 = apply_array_lo_bound(d1, power_lo_bound)
             d3 = shift_array_to_min(d2)
 
             # Leap markers.
-            leap_markers = [d3i > leap_threshold for d3i in d3]
+            leap_markers = self.get_min_power_leap_markers(idx, ignore_min_powers_part,
+                                                           power_lo_bound, leap_threshold)
 
+            n = len(leap_markers)
+
+            # We detect defect only for narrow leap.
+            # For defect we have to have leap in i-th position, and
+            # no leaps in (i - leap_half_width)-th and (i + leap_half_width)-th.
             for (i, lmi) in enumerate(leap_markers):
-                if lmi:
-                    df = Defect(self.FileName, idx,
-                                'min_power_short_leap', self.specpos_to_time(i))
-                    dfs.append(df)
+                if (i >= leap_half_width) and (i < n - leap_half_width):
+                    m_0 = lmi
+                    m_left = leap_markers[i - leap_half_width]
+                    m_right = leap_markers[i + leap_half_width]
+                    if m_0 and (not m_left) and (not m_right):
+                        df = Defect(self.FileName, idx,
+                                    'min_power_short_leap', self.specpos_to_time(i))
+                        dfs.append(df)
 
         return dfs
 
@@ -560,7 +620,7 @@ if __name__ == '__main__':
 
     directory = 'wavs/origin'
     # tests = os.listdir('wavs/origin')
-    tests = ['0001.wav']
+    tests = ['0015.wav']
     print(tests)
     defects = []
 
