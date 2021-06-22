@@ -203,6 +203,41 @@ class Defect:
 # ==================================================================================================
 
 
+class Channel:
+    """
+    Канал.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self, y, sample_rate, duration):
+        """
+        Конструктор канала.
+
+        :param y:           Массив амплитуд.
+        :param sample_rate: Частота дисткретизации.
+        :param duration:    Продолжительность.
+        """
+
+        self.Y = y
+        self.Spectre = None
+        self.TSpectre = None
+        self.SampleRate = sample_rate
+        self.Duration = duration
+
+    # ----------------------------------------------------------------------------------------------
+
+    def generate_spectre(self):
+        """
+        Генерация спектра.
+        """
+
+        self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
+        self.TSpectre = self.Spectre.transpose()
+
+# ==================================================================================================
+
+
 class WAV:
     """
     Аудиоззапись.
@@ -217,24 +252,19 @@ class WAV:
         :param filename: Имя файла.
         """
 
-        # Имя файла
+        # Имя файла.
         # (в данном месте инициализировать нельзя, так как задание имени записи не гарантирует
         # ее успешную загрузку, имя файла записывается в момент загрузки).
         self.FileName = None
 
-        # Массив амплитуд.
-        self.Y = None
+        # Каналы.
+        self.Channels = None
 
         # Частота дискретизации.
         self.SampleRate = None
 
         # Продолжительность записи (с).
         self.Duration = None
-
-        # Спектры записи.
-        # Представлены в виде 3d-массива:
-        #   (количество каналов) * (количество линий Y) * (количество линий X)
-        self.Spectres = None
 
         # Если подано имя файла, то пытаемся загрузить его.
         if filename is not None:
@@ -250,7 +280,7 @@ class WAV:
                  False - в противном случае.
         """
 
-        return self.Y is not None
+        return self.Channels is not None
 
     # ----------------------------------------------------------------------------------------------
 
@@ -276,13 +306,18 @@ class WAV:
         # Загрузка файла.
         self.FileName = filename
         try:
-            self.Y, self.SampleRate = librosa.load(filename, sr=None, mono=False)
+
+            # Чтение амплитуд и частоты дискретизации и вычисление продолжительности.
+            ys, self.SampleRate = librosa.load(filename, sr=None, mono=False)
+            self.Duration = librosa.get_duration(y=ys, sr=self.SampleRate)
+
+            # Создание каналов.
+            # Частота дискретизации и продолжительность отправляются в каждый канал.
+            self.Channels = [Channel(y, self.SampleRate, self.Duration) for y in ys]
+
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
             return False
-
-        # Вычисляем продолжительность записи.
-        self.Duration = librosa.get_duration(y=self.Y, sr=self.SampleRate)
 
         # Загрузка прошла успешно.
         return True
@@ -294,13 +329,19 @@ class WAV:
         Печать общей информации об аудиозаписи.
         """
 
+        if not self.is_ok():
+            print('Bad WAV audio record!')
+            return
+
+        n = len(self.Channels)
+
         print('WAV audio record: FileName       = {0}'.format(self.FileName))
-        print('                  Y.shape        = {0}'.format(self.Y.shape))
+        a = [ch.Y.shape for ch in self.Channels]
+        print('                  Channels       = {0} : {1}'.format(n, a))
         print('                  SampleRate     = {0}'.format(self.SampleRate))
         print('                  Duration       = {0:.3f} s'.format(self.Duration))
-
-        if self.Spectres is not None:
-            print('                  Spectres.shape = {0}'.format(self.Spectres.shape))
+        a = [ch.Spectre.shape for ch in self.Channels]
+        print('                  Spectres       = {0} : {1}'.format(n, a))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -309,10 +350,8 @@ class WAV:
         Генерация спектров.
         """
 
-        def generate_spectre(d):
-            return librosa.amplitude_to_db(abs(librosa.stft(d, n_fft=2048)))
-
-        self.Spectres = np.array([generate_spectre(d) for d in self.Y])
+        for ch in self.Channels:
+            ch.generate_spectre()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -325,7 +364,7 @@ class WAV:
         :return: Точка в спектре.
         """
 
-        return int(tx * (self.Spectres.shape[-1] / self.Duration))
+        return int(tx * (self.Channels[0].Spectre.shape[-1] / self.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -338,7 +377,7 @@ class WAV:
         :return: Точка времени.
         """
 
-        return specpos * (self.Duration / self.Spectres.shape[-1])
+        return specpos * (self.Duration / self.Channels[0].Spectre.shape[-1])
 
     # ----------------------------------------------------------------------------------------------
 
@@ -352,7 +391,7 @@ class WAV:
 
         # Создание картинки и отображение волны на ней.
         plt.figure(figsize=figsize)
-        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate)
+        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -366,7 +405,7 @@ class WAV:
 
         # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
-        librosa.display.specshow(self.Spectres[idx],
+        librosa.display.specshow(self.Channels[idx].Spectre,
                                  sr=self.SampleRate,
                                  x_axis='time', y_axis='hz', cmap='turbo')
         plt.colorbar(format='%+02.0f dB')
@@ -385,7 +424,7 @@ class WAV:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Получение данных для отображения центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
                                                                sr=self.SampleRate)[0]
 
         # Нормализация данных.
@@ -396,7 +435,7 @@ class WAV:
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
+        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate, alpha=0.4)
         plt.plot(t, normalize(spectral_centroids), color='b')
 
     # ----------------------------------------------------------------------------------------------
@@ -413,11 +452,11 @@ class WAV:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Получение данных массива спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
                                                                sr=self.SampleRate)[0]
 
         # Получение данных массива спектрального спада.
-        spectral_rolloff = librosa.feature.spectral_rolloff(self.Y[idx] + 0.01,
+        spectral_rolloff = librosa.feature.spectral_rolloff(self.Channels[idx].Y + 0.01,
                                                             sr=self.SampleRate)[0]
 
         # Нормализация данных.
@@ -428,7 +467,7 @@ class WAV:
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Y[idx], sr=self.SampleRate, alpha=0.4)
+        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate, alpha=0.4)
         plt.plot(t, normalize(spectral_rolloff), color='r')
 
     # ----------------------------------------------------------------------------------------------
@@ -445,11 +484,11 @@ class WAV:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Вычисление данных спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
+        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
                                                                sr=self.SampleRate)[0]
 
         # Вычисление данных спектральной ширины.
-        x = self.Y[idx]
+        x = self.Channels[idx].Y
         sr = self.SampleRate
         spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr)[0]
         spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=3)[0]
@@ -480,7 +519,7 @@ class WAV:
         :return: Значение для нормализации.
         """
 
-        return -self.Spectres[idx].min()
+        return -self.Channels[idx].Spectre.min()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -492,7 +531,7 @@ class WAV:
         :param figsize: Размер картинки.
         """
 
-        m = self.Spectres[idx].transpose()
+        m = self.Channels[idx].Spectre.transpose()
         d = [sum(mi) for mi in m]
         show_graph(d, figsize=figsize, title='Spectre Total Power')
 
@@ -508,7 +547,7 @@ class WAV:
         :return: Данные о минимальной энергии.
         """
 
-        m = self.Spectres[idx].transpose()
+        m = self.Channels[idx].Spectre.transpose()
 
         return [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
 
@@ -523,7 +562,7 @@ class WAV:
         :param figsize:                Размер картинки.
         """
 
-        m = self.Spectres[idx].transpose()
+        m = self.Channels[idx].Spectre.transpose()
         d_min = [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
         d_max = [max(mi) for mi in m]
         show_graph([d_min, d_max], figsize=figsize,
@@ -566,7 +605,7 @@ class WAV:
         :param figsize:                Размер картинки.
         """
 
-        m = self.Spectres[idx].transpose()
+        m = self.Channels[idx].Spectre.transpose()
         d = self.get_min_power_leap_markers(idx, ignore_min_powers_part,
                                             power_lo_bound, leap_threshold)
         show_graph(d, figsize=figsize,
@@ -583,7 +622,7 @@ class WAV:
         """
 
         n = self.normalize_spectre_value(idx)
-        m = self.Spectres[idx].transpose()
+        m = self.Channels[idx].Spectre.transpose()
 
         # Веса по частотам.
         w = [i * i for i in range(len(m[0]))]
