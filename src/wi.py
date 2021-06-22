@@ -193,6 +193,41 @@ class Defect:
 # ==================================================================================================
 
 
+class DefectSnapSettings:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 limits_before_sort,
+                 limits_after_sort,
+                 min_power_lo_threshold,
+                 half_snap_len,
+                 diff_min_max_powers_hi_threshold):
+        """
+        Конструктор настроек для дефекта snap.
+
+        :param limits_before_sort:               Границы, по которым обрубаются массивы
+                                                 силы звука до сортировки.
+        :param limits_after_sort:                Границы, по которым обрубаются массивы
+                                                 силы звука после сортировки.
+        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
+                                                 минимальной силы звука.
+        :param half_snap_len:                    Половинная длина склейки
+                                                 (чем меньше она, тем более резкую скейку ловим).
+        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
+                                                 максимума и минимума силы звука (определяет
+                                                 степень постоянства силы в массиве).
+        """
+
+        self.LimitsBeforeSort = limits_before_sort
+        self.LimitsAfterSort = limits_after_sort
+        self.MinPowerLoThreshold = min_power_lo_threshold
+        self.HalfSnapLen = half_snap_len
+        self.DiffMinMaxPowersHiThreshold = diff_min_max_powers_hi_threshold
+
+# ==================================================================================================
+
+
 class Channel:
     """
     Канал.
@@ -445,29 +480,18 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap_markers(self,
-                                limits_before_sort, limits_after_sort,
-                                min_power_lo_threshold,
-                                diff_min_max_powers_hi_threshold):
+    def get_defect_snap_markers(self, s: DefectSnapSettings):
         """
         Получение маркеров дефекта snap.
 
-        :param limits_before_sort:               Границы, по которым обрубаются массивы
-                                                 силы звука до сортировки.
-        :param limits_after_sort:                Границы, по которым обрубаются массивы
-                                                 силы звука после сортировки.
-        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
-                                                 минимальной силы звука.
-        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
-                                                 максимума и минимума силы звука (определяет
-                                                 степень постоянства силы в массиве).
+        :param s: Настройки.
 
         :return: Список маркеров snap.
         """
 
         d = [min_max_extended(tsi,
-                              limits_before_sort=limits_before_sort,
-                              limits_after_sort=limits_after_sort)
+                              limits_before_sort=s.LimitsBeforeSort,
+                              limits_after_sort=s.LimitsAfterSort)
              for tsi in self.TSpectre]
 
         # Создаем массив для разметки дефектов.
@@ -475,9 +499,9 @@ class Channel:
         markers = [0] * n
 
         # Производим разметку.
-        for i in range(2, n):
-            is_snap = (d[i][0] - d[i - 2][0] > min_power_lo_threshold)
-            is_cnst = (d[i][1] - d[i][0] < diff_min_max_powers_hi_threshold)
+        for i in range(s.HalfSnapLen, n):
+            is_snap = (d[i][0] - d[i - s.HalfSnapLen][0] > s.MinPowerLoThreshold)
+            is_cnst = (d[i][1] - d[i][0] < s.DiffMinMaxPowersHiThreshold)
             if is_snap and is_cnst:
                 markers[i] = 1
 
@@ -485,56 +509,29 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_defect_snap_markers(self,
-                                 limits_before_sort, limits_after_sort,
-                                 min_power_lo_threshold,
-                                 diff_min_max_powers_hi_threshold,
-                                 figsize=(20, 8)):
+    def show_defect_snap_markers(self, s: DefectSnapSettings, figsize=(20, 8)):
         """
         Демонстрация маркеров дефекта snap.
 
-        :param limits_before_sort:               Границы, по которым обрубаются массивы
-                                                 силы звука до сортировки.
-        :param limits_after_sort:                Границы, по которым обрубаются массивы
-                                                 силы звука после сортировки.
-        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
-                                                 минимальной силы звука.
-        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
-                                                 максимума и минимума силы звука (определяет
-                                                 степень постоянства силы в массиве).
-        :param figsize:                          Размер картинки.
+        :param s:       Настройки.
+        :param figsize: Размер картинки.
         """
 
-        markers = self.get_defect_snap_markers(limits_before_sort, limits_after_sort,
-                                               min_power_lo_threshold,
-                                               diff_min_max_powers_hi_threshold)
+        markers = self.get_defect_snap_markers(s)
         show_graph(markers, figsize=figsize, title='Defect Snap Markers')
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap_objs(self,
-                             limits_before_sort, limits_after_sort,
-                             min_power_lo_threshold,
-                             diff_min_max_powers_hi_threshold):
+    def get_defects_snap(self, s: DefectSnapSettings):
         """
-        Получение маркеров дефекта snap.
+        Получение дефектов snap.
 
-        :param limits_before_sort:               Границы, по которым обрубаются массивы
-                                                 силы звука до сортировки.
-        :param limits_after_sort:                Границы, по которым обрубаются массивы
-                                                 силы звука после сортировки.
-        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
-                                                 минимальной силы звука.
-        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
-                                                 максимума и минимума силы звука (определяет
-                                                 степень постоянства силы в массиве).
+        :param s: Настройки.
 
         :return: Список дефектов snap.
         """
 
-        markers = self.get_defect_snap_markers(limits_before_sort, limits_after_sort,
-                                               min_power_lo_threshold,
-                                               diff_min_max_powers_hi_threshold)
+        markers = self.get_defect_snap_markers(s)
 
         # Формируем список дефектов.
         objs = [Defect(self.FileName, self.Channel, 'snap', self.specpos_to_time(i))
@@ -686,34 +683,16 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap_objs(self,
-                             limits_before_sort, limits_after_sort,
-                             min_power_lo_threshold,
-                             diff_min_max_powers_hi_threshold):
+    def get_defects_snap(self, s: DefectSnapSettings):
         """
         Получение маркеров дефекта snap.
 
-        :param limits_before_sort:               Границы, по которым обрубаются массивы
-                                                 силы звука до сортировки.
-        :param limits_after_sort:                Границы, по которым обрубаются массивы
-                                                 силы звука после сортировки.
-        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
-                                                 минимальной силы звука.
-        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
-                                                 максимума и минимума силы звука (определяет
-                                                 степень постоянства силы в массиве).
+        :param s: Настройки.
 
         :return: Список дефектов snap.
         """
 
-        ch0_objs = self.ch0().get_defect_snap_objs(limits_before_sort, limits_after_sort,
-                                                   min_power_lo_threshold,
-                                                   diff_min_max_powers_hi_threshold)
-        ch1_objs = self.ch1().get_defect_snap_objs(limits_before_sort, limits_after_sort,
-                                                   min_power_lo_threshold,
-                                                   diff_min_max_powers_hi_threshold)
-
-        return ch0_objs + ch1_objs
+        return self.ch0().get_defects_snap(s) + self.ch1().get_defects_snap(s)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -724,7 +703,13 @@ class WAV:
         :return: Список дефектов.
         """
 
-        return self.get_defect_snap_objs((0.7, 0.95), (0.25, 0.75), 5.0, 5.0)
+        defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
+                                                  limits_after_sort=(0.25, 0.75),
+                                                  min_power_lo_threshold=5.0,
+                                                  half_snap_len=2,
+                                                  diff_min_max_powers_hi_threshold=5.0)
+
+        return self.get_defects_snap(defect_snap_settings)
 
 # ==================================================================================================
 
