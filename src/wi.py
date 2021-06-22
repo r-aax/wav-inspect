@@ -33,6 +33,21 @@ def zipwith(a, b, f):
 # --------------------------------------------------------------------------------------------------
 
 
+def unzip(a):
+    """
+    Разделение списка двухэлементных кортежей на два списка.
+
+    :param a: Список двухэлементных кортежей.
+
+    :return: Кортеж из двух списков.
+    """
+
+    return tuple([list(ai) for ai in zip(*a)])
+
+
+# --------------------------------------------------------------------------------------------------
+
+
 def indices_slice_array(ar_len, start, part_len, step):
     """
     Получение списка кортежей, каждый из которых представляет собой индексы подсписков
@@ -65,10 +80,10 @@ def show_graph(data, figsize=(20, 8),
     Демонстрация графика или набора графиков.
 
     :param data:      Массив данных для отображения (это могут быть данные одного графика
-                      или массив данных для нескольких графиков).
+                      или массив/кортеж данных для нескольких графиков).
     :param figsize:   Размер картинки.
-    :param style:     Стиль графика (или списов стилей, если графиков несколько).
-    :param linewidth: Ширина линии (или список ширин линий).
+    :param style:     Стиль графика (или списов/кортеж стилей, если графиков несколько).
+    :param linewidth: Ширина линии (или список/кортеж ширин линий).
     :param title:     Заголовок графика.
     :param xlabel:    Надпись на оси OX.
     :param ylabel:    Надпись на оси OY.
@@ -108,53 +123,28 @@ def show_graph(data, figsize=(20, 8),
 # --------------------------------------------------------------------------------------------------
 
 
-def min_without_some(ar, part):
+def min_max_extended(a, limits_before_sort, limits_after_sort):
     """
-    Получение минимального значение с игнорированием части значений.
+    Получение минимального и максимального значения с применением ограничений.
+    Сначала массив обрезается по границам limits_before_sort.
+    После этого он сортируется.
+    После сортировки массив обрезается по границам limits_after_sort.
+    После этого возвращается первый и последний элемент массива.
 
-    :param ar:   Список.
-    :param part: Часть значений, которые нужно проигнорировать (0.0 <= part < 1.0).
+    :param a:                  Массив.
+    :param limits_before_sort: Границы, по которым обрубатся массив до сортировки.
+    :param limits_after_sort:  Границы, по которым обрубается массив после сортировки.
 
-    :return: Минимальное значение списка с учетом проигнорированной части элементов.
-    """
-
-    i = int(len(ar) * part)
-    cp = ar.copy()
-    cp.sort()
-
-    return cp[i]
-
-
-# --------------------------------------------------------------------------------------------------
-
-
-def apply_array_lo_bound(a, lo_bound):
-    """
-    Применение фильтра нижней границы к списку.
-
-    :param a:        Список.
-    :param lo_bound: Нижняя граница значений.
-
-    :return: Новый список после применения фильтра.
+    :return: Минимальное и максимальнео значения с учетом органичителей.
     """
 
-    return [max(ai, lo_bound) for ai in a]
+    n = len(a)
+    x = a[int(n * limits_before_sort[0]): int(n * limits_before_sort[1])]
+    x.sort()
+    n = len(x)
+    x = x[int(n * limits_after_sort[0]): int(n * limits_after_sort[1])]
 
-# --------------------------------------------------------------------------------------------------
-
-
-def shift_array_to_min(a):
-    """
-    Сдвиг списка по нижней границе.
-
-    :param a: Список.
-
-    :return: Список, сдвинутый по нижней границе.
-    """
-
-    m = min(a)
-
-    return [ai - m for ai in a]
+    return x[0], x[-1]
 
 
 # ==================================================================================================
@@ -210,15 +200,19 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, y, sample_rate, duration):
+    def __init__(self, filename, channel, y, sample_rate, duration):
         """
         Конструктор канала.
 
+        :param filename:    Имя записи.
+        :param channel:     Канал.
         :param y:           Массив амплитуд.
         :param sample_rate: Частота дисткретизации.
         :param duration:    Продолжительность.
         """
 
+        self.FileName = filename
+        self.Channel = channel
         self.Y = y
         self.Spectre = None
         self.TSpectre = None
@@ -233,6 +227,9 @@ class Channel:
         """
 
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
+
+        # Транспонируем матрицу звука, чтобы первым измерением была отметка времени.
+        # При этом удобнее работать с матрицей, если в нижних частях массива лежат низкие частоты.
         self.TSpectre = self.Spectre.transpose()
 
     # ----------------------------------------------------------------------------------------------
@@ -392,19 +389,159 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_graph_spectre_min_max_power(self, ignore_min_powers_part, figsize=(20, 8)):
+    def show_graph_spectre_min_max_power(self,
+                                         limits_before_sort, limits_after_sort,
+                                         show_min=True, show_max=True,
+                                         figsize=(20, 8)):
         """
         Демонстрация графиков минимальной и максимальной силы звука.
 
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
-        :param figsize:                Размер картинки.
+        :param limits_before_sort: Границы, по которым обрубатся массив до сортировки.
+        :param limits_after_sort:  Границы, по которым обрубается массив после сортировки.
+        :param show_min:           Флаг демонстрации минимальных значений.
+        :param show_max:           Флаг демонстрации максимальных значений.
+        :param figsize:            Размер картинки.
         """
 
-        d_min = [min_without_some(tsi, part=ignore_min_powers_part) for tsi in self.TSpectre]
-        d_max = [max(tsi) for tsi in self.TSpectre]
-        show_graph([d_min, d_max], figsize=figsize,
-                   title='Spectre Min/Max Power',
-                   style=['b', 'r'], linewidth=[2.0, 2.0])
+        d = [min_max_extended(tsi,
+                              limits_before_sort=limits_before_sort,
+                              limits_after_sort=limits_after_sort)
+             for tsi in self.TSpectre]
+        ud = unzip(d)
+
+        if show_min:
+            if show_max:
+                show_graph(ud, figsize=figsize,
+                           title='Spectre Min/Max Power',
+                           style=['b', 'r'], linewidth=[2.0, 2.0])
+            else:
+                show_graph(ud[0], figsize=figsize, title='Spectre Min Power', style='b')
+        else:
+            if show_max:
+                show_graph(ud[1], figsize=figsize, title='Spectre Max Power', style='r')
+            else:
+                pass
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_graph_spectre_min_max_diff_power(self,
+                                              limits_before_sort, limits_after_sort,
+                                              figsize=(20, 8)):
+        """
+        Демонстрация графика разницы между максимальной и минимальной силой звука.
+
+        :param limits_before_sort: Границы, по которым обрубается массив до сортировки.
+        :param limits_after_sort:  Границы, по которым обрубается массив после сортировки.
+        :param figsize:            Размер картинки.
+        """
+
+        d = [min_max_extended(tsi,
+                              limits_before_sort=limits_before_sort,
+                              limits_after_sort=limits_after_sort)
+             for tsi in self.TSpectre]
+        diffs = [d_max - d_min for (d_min, d_max) in d]
+
+        show_graph(diffs, figsize=figsize, title='Spectre Min/Max Diff Power')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defect_snap_markers(self,
+                                limits_before_sort, limits_after_sort,
+                                min_power_lo_threshold,
+                                diff_min_max_powers_hi_threshold):
+        """
+        Получение маркеров дефекта snap.
+
+        :param limits_before_sort:               Границы, по которым обрубаются массивы
+                                                 силы звука до сортировки.
+        :param limits_after_sort:                Границы, по которым обрубаются массивы
+                                                 силы звука после сортировки.
+        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
+                                                 минимальной силы звука.
+        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
+                                                 максимума и минимума силы звука (определяет
+                                                 степень постоянства силы в массиве).
+
+        :return: Список маркеров snap.
+        """
+
+        d = [min_max_extended(tsi,
+                              limits_before_sort=limits_before_sort,
+                              limits_after_sort=limits_after_sort)
+             for tsi in self.TSpectre]
+
+        # Создаем массив для разметки дефектов.
+        n = len(d)
+        markers = [0] * n
+
+        # Производим разметку.
+        for i in range(1, n):
+            is_snap = (d[i][0] - d[i - 1][0] > min_power_lo_threshold)
+            is_cnst = (d[i][1] - d[i][0] < diff_min_max_powers_hi_threshold)
+            if is_snap and is_cnst:
+                markers[i] = 1
+
+        return markers
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_defect_snap_markers(self,
+                                 limits_before_sort, limits_after_sort,
+                                 min_power_lo_threshold,
+                                 diff_min_max_powers_hi_threshold,
+                                 figsize=(20, 8)):
+        """
+        Демонстрация маркеров дефекта snap.
+
+        :param limits_before_sort:               Границы, по которым обрубаются массивы
+                                                 силы звука до сортировки.
+        :param limits_after_sort:                Границы, по которым обрубаются массивы
+                                                 силы звука после сортировки.
+        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
+                                                 минимальной силы звука.
+        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
+                                                 максимума и минимума силы звука (определяет
+                                                 степень постоянства силы в массиве).
+        :param figsize:                          Размер картинки.
+        """
+
+        markers = self.get_defect_snap_markers(limits_before_sort, limits_after_sort,
+                                               min_power_lo_threshold,
+                                               diff_min_max_powers_hi_threshold)
+        show_graph(markers, figsize=figsize, title='Defect Snap Markers')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defect_snap_objs(self,
+                             limits_before_sort, limits_after_sort,
+                             min_power_lo_threshold,
+                             diff_min_max_powers_hi_threshold):
+        """
+        Получение маркеров дефекта snap.
+
+        :param limits_before_sort:               Границы, по которым обрубаются массивы
+                                                 силы звука до сортировки.
+        :param limits_after_sort:                Границы, по которым обрубаются массивы
+                                                 силы звука после сортировки.
+        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
+                                                 минимальной силы звука.
+        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
+                                                 максимума и минимума силы звука (определяет
+                                                 степень постоянства силы в массиве).
+
+        :return: Список дефектов snap.
+        """
+
+        markers = self.get_defect_snap_markers(limits_before_sort, limits_after_sort,
+                                               min_power_lo_threshold,
+                                               diff_min_max_powers_hi_threshold)
+
+        # Формируем список дефектов.
+        objs = [Defect(self.FileName, self.Channel, 'snap', self.specpos_to_time(i))
+                for (i, marker) in enumerate(markers)
+                if (marker == 1)]
+
+        return objs
 
 # ==================================================================================================
 
@@ -484,7 +621,8 @@ class WAV:
 
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Channel(y, self.SampleRate, self.Duration) for y in ys]
+            self.Channels = [Channel(self.FileName, i, y, self.SampleRate, self.Duration)
+                             for (i, y) in enumerate(ys)]
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
@@ -548,120 +686,45 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_min_power_data(self, idx, ignore_min_powers_part):
+    def get_defect_snap_objs(self,
+                             limits_before_sort, limits_after_sort,
+                             min_power_lo_threshold,
+                             diff_min_max_powers_hi_threshold):
         """
-        Получение данных минимальной энергии.
+        Получение маркеров дефекта snap.
 
-        :param idx:                    Номер канала.
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param limits_before_sort:               Границы, по которым обрубаются массивы
+                                                 силы звука до сортировки.
+        :param limits_after_sort:                Границы, по которым обрубаются массивы
+                                                 силы звука после сортировки.
+        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
+                                                 минимальной силы звука.
+        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
+                                                 максимума и минимума силы звука (определяет
+                                                 степень постоянства силы в массиве).
 
-        :return: Данные о минимальной энергии.
+        :return: Список дефектов snap.
         """
 
-        m = self.Channels[idx].Spectre.transpose()
+        ch0_objs = self.ch0().get_defect_snap_objs(limits_before_sort, limits_after_sort,
+                                                   min_power_lo_threshold,
+                                                   diff_min_max_powers_hi_threshold)
+        ch1_objs = self.ch1().get_defect_snap_objs(limits_before_sort, limits_after_sort,
+                                                   min_power_lo_threshold,
+                                                   diff_min_max_powers_hi_threshold)
 
-        return [min_without_some(mi, part=ignore_min_powers_part) for mi in m]
+        return ch0_objs + ch1_objs
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_min_power_leap_markers(self, idx,
-                                   ignore_min_powers_part, power_lo_bound, leap_threshold):
-        """
-        Генерация маркеров скачков минимальной силы.
-
-        :param idx:                    Номер канала.
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
-        :param power_lo_bound:         Нижняя граница силы (DB).
-        :param leap_threshold:         Порог определения скачка (DB).
-
-        :return: Массив маркеров скачков.
-        """
-
-        d1 = self.get_min_power_data(idx, ignore_min_powers_part)
-        d2 = apply_array_lo_bound(d1, power_lo_bound)
-        d3 = shift_array_to_min(d2)
-
-        return [int(d3i > leap_threshold) for d3i in d3]
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_graph_spectre_min_power_leap_markers(self, idx,
-                                                  ignore_min_powers_part, power_lo_bound,
-                                                  leap_threshold, figsize=(20, 8)):
-        """
-        Демонстрация графика скачков минимальной силы.
-
-        :param idx:                    Номер канала.
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
-        :param power_lo_bound:         Нижняя граница силы (DB).
-        :param leap_threshold:         Порог определения скачка (DB).
-        :param figsize:                Размер картинки.
-        """
-
-        m = self.Channels[idx].Spectre.transpose()
-        d = self.get_min_power_leap_markers(idx, ignore_min_powers_part,
-                                            power_lo_bound, leap_threshold)
-        show_graph(d, figsize=figsize,
-                   title='Spectre Min Power Leap Markers')
-
-    # ----------------------------------------------------------------------------------------------
-
-    def detect_defect_min_power_short_leap(self,
-                                           ignore_min_powers_part=0.01,
-                                           power_lo_bound=-50.0,
-                                           leap_threshold=5.0,
-                                           leap_half_width=2):
-        """
-        Детектирование дефекта скачка минимальной силы.
-
-        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
-        :param power_lo_bound:         Нижняя граница силы (DB).
-        :param leap_threshold:         Порог определения скачка (DB).
-        :param leap_half_width:        Ограничение на полудлину прыжка.
-
-        :return: Список дефектов.
-        """
-
-        dfs = []
-
-        for idx in [0, 1]:
-
-            # Process data.
-            d1 = self.get_min_power_data(idx, ignore_min_powers_part)
-            d2 = apply_array_lo_bound(d1, power_lo_bound)
-            d3 = shift_array_to_min(d2)
-
-            # Leap markers.
-            leap_markers = self.get_min_power_leap_markers(idx, ignore_min_powers_part,
-                                                           power_lo_bound, leap_threshold)
-
-            n = len(leap_markers)
-
-            # We detect defect only for narrow leap.
-            # For defect we have to have leap in i-th position, and
-            # no leaps in (i - leap_half_width)-th and (i + leap_half_width)-th.
-            for (i, lmi) in enumerate(leap_markers):
-                if (i >= leap_half_width) and (i < n - leap_half_width):
-                    m_0 = lmi
-                    m_left = leap_markers[i - leap_half_width]
-                    m_right = leap_markers[i + leap_half_width]
-                    if m_0 and (not m_left) and (not m_right):
-                        df = Defect(self.FileName, idx,
-                                    'min_power_short_leap', self.Channels[0].specpos_to_time(i))
-                        dfs.append(df)
-
-        return dfs
-
-    # ----------------------------------------------------------------------------------------------
-
-    def detect_defects(self):
+    def get_defects(self):
         """
         Определение дефектов.
 
         :return: Список дефектов.
         """
 
-        return self.detect_defect_min_power_short_leap()
+        return self.get_defect_snap_objs((0.7, 0.99), (0.05, 0.95), 5.0, 3.0)
 
 # ==================================================================================================
 
@@ -674,14 +737,11 @@ if __name__ == '__main__':
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
 
-    # min_without_part
-    assert min_without_some([2, 1, 3, 5, 2], 0.0) == 1
-
     # Тело основного теста.
 
     directory = 'wavs/origin'
-    # tests = os.listdir(directory)
-    tests = ['0015.wav']
+    tests = os.listdir(directory)
+    # tests = ['0015.wav']
     print(tests)
     defects = []
 
@@ -690,7 +750,7 @@ if __name__ == '__main__':
         wav = WAV('{0}/{1}'.format(directory, test))
         if wav.is_ok():
             wav.generate_spectres()
-            defects = defects + wav.detect_defects()
+            defects = defects + wav.get_defects()
 
     for defect in defects:
         print('  {0}'.format(defect))
