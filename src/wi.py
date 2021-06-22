@@ -235,6 +235,123 @@ class Channel:
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
         self.TSpectre = self.Spectre.transpose()
 
+    # ----------------------------------------------------------------------------------------------
+
+    def show_wave(self, figsize=(20, 8)):
+        """
+        Демонстрация звуковой волны.
+
+        :param figsize: Размер картинки.
+        """
+
+        # Создание картинки и отображение волны на ней.
+        plt.figure(figsize=figsize)
+        librosa.display.waveplot(self.Y, sr=self.SampleRate)
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectre(self, figsize=(20, 8)):
+        """
+        Демонстрация спектра.
+
+        :param figsize: Размер картинки.
+        """
+
+        # Создание картинки и отображение на ней.
+        plt.figure(figsize=figsize)
+        librosa.display.specshow(self.Spectre, sr=self.SampleRate,
+                                 x_axis='time', y_axis='hz', cmap='turbo')
+        plt.colorbar(format='%+02.0f dB')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_centroid(self, figsize=(20, 8)):
+        """
+        Демонстрация графика спектрального центроида.
+
+        :param figsize: Размер картинки.
+        """
+
+        # Пример кода:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Получение данных для отображения центроида.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+
+        # Нормализация данных.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
+        # Создание картинки и отображение на ней.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
+        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        plt.plot(t, normalize(spectral_centroids), color='b')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_rolloff(self, figsize=(20, 8)):
+        """
+        Демонстрация графика спектрального спада.
+
+        :param figsize: Размер картинки.
+        """
+
+        # Пример кода:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Получение данных массива спектрального центроида.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+
+        # Получение данных массива спектрального спада.
+        spectral_rolloff = librosa.feature.spectral_rolloff(self.Y + 0.01, sr=self.SampleRate)[0]
+
+        # Нормализация данных.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
+        # Создание картинки и отображение на ней.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
+        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        plt.plot(t, normalize(spectral_rolloff), color='r')
+
+    # ----------------------------------------------------------------------------------------------
+
+    def show_spectral_bandwidth(self, figsize=(20, 8)):
+        """
+        Демострация спектральной ширины.
+
+        :param figsize: Размер картинки.
+        """
+
+        # Пример кода:
+        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
+
+        # Вычисление данных спектрального центроида.
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+
+        # Вычисление данных спектральной ширины.
+        sb_2 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate)[0]
+        sb_3 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate, p=3)[0]
+        sb_4 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate, p=4)[0]
+
+        # Нормализациия данных.
+        def normalize(x, axis=0):
+            return sklearn.preprocessing.minmax_scale(x, axis=axis)
+
+        # Создание картинки и отображение на ней.
+        plt.figure(figsize=figsize)
+        frames = range(len(spectral_centroids))
+        t = librosa.frames_to_time(frames)
+        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        plt.plot(t, normalize(sb_2), color='r')
+        plt.plot(t, normalize(sb_3), color='g')
+        plt.plot(t, normalize(sb_4), color='y')
+        plt.legend(('p = 2', 'p = 3', 'p = 4'))
+
 # ==================================================================================================
 
 
@@ -324,6 +441,28 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def ch0(self):
+        """
+        Получение канала 0.
+
+        :return: Канал 0.
+        """
+
+        return self.Channels[0]
+
+    # ----------------------------------------------------------------------------------------------
+
+    def ch1(self):
+        """
+        Получение канала 1.
+
+        :return: Канал 1.
+        """
+
+        return self.Channels[1]
+
+    # ----------------------------------------------------------------------------------------------
+
     def summary(self):
         """
         Печать общей информации об аудиозаписи.
@@ -378,135 +517,6 @@ class WAV:
         """
 
         return specpos * (self.Duration / self.Channels[0].Spectre.shape[-1])
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_wave(self, idx, figsize=(20, 8)):
-        """
-        Демонстрация звуковой волны.
-
-        :param idx:     Индекс массива амплитуд.
-        :param figsize: Размер картинки.
-        """
-
-        # Создание картинки и отображение волны на ней.
-        plt.figure(figsize=figsize)
-        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate)
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_spectre(self, idx, figsize=(20, 8)):
-        """
-        Демонстрация спектра.
-
-        :param idx:     Индекс спектра.
-        :param figsize: Размер картинки.
-        """
-
-        # Создание картинки и отображение на ней.
-        plt.figure(figsize=figsize)
-        librosa.display.specshow(self.Channels[idx].Spectre,
-                                 sr=self.SampleRate,
-                                 x_axis='time', y_axis='hz', cmap='turbo')
-        plt.colorbar(format='%+02.0f dB')
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_spectral_centroid(self, idx, figsize=(20, 8)):
-        """
-        Демонстрация графика спектрального центроида.
-
-        :param idx:     Индекс массива амплитуд.
-        :param figsize: Размер картинки.
-        """
-
-        # Пример кода:
-        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
-
-        # Получение данных для отображения центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
-                                                               sr=self.SampleRate)[0]
-
-        # Нормализация данных.
-        def normalize(x, axis=0):
-            return sklearn.preprocessing.minmax_scale(x, axis=axis)
-
-        # Создание картинки и отображение на ней.
-        plt.figure(figsize=figsize)
-        frames = range(len(spectral_centroids))
-        t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate, alpha=0.4)
-        plt.plot(t, normalize(spectral_centroids), color='b')
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_spectral_rolloff(self, idx, figsize=(20, 8)):
-        """
-        Демонстрация графика спектрального спада.
-
-        :param idx:     Индекс массива амплитуд.
-        :param figsize: Размер картинки.
-        """
-
-        # Пример кода:
-        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
-
-        # Получение данных массива спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
-                                                               sr=self.SampleRate)[0]
-
-        # Получение данных массива спектрального спада.
-        spectral_rolloff = librosa.feature.spectral_rolloff(self.Channels[idx].Y + 0.01,
-                                                            sr=self.SampleRate)[0]
-
-        # Нормализация данных.
-        def normalize(x, axis=0):
-            return sklearn.preprocessing.minmax_scale(x, axis=axis)
-
-        # Создание картинки и отображение на ней.
-        plt.figure(figsize=figsize)
-        frames = range(len(spectral_centroids))
-        t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Channels[idx].Y, sr=self.SampleRate, alpha=0.4)
-        plt.plot(t, normalize(spectral_rolloff), color='r')
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_spectral_bandwidth(self, idx, figsize=(20, 8)):
-        """
-        Демострация спектральной ширины.
-
-        :param idx:     Индекс массива амплитуд.
-        :param figsize: Размер картинки.
-        """
-
-        # Пример кода:
-        # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
-
-        # Вычисление данных спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Channels[idx].Y,
-                                                               sr=self.SampleRate)[0]
-
-        # Вычисление данных спектральной ширины.
-        x = self.Channels[idx].Y
-        sr = self.SampleRate
-        spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr)[0]
-        spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=3)[0]
-        spectral_bandwidth_4 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=4)[0]
-
-        # Нормализациия данных.
-        def normalize(x, axis=0):
-            return sklearn.preprocessing.minmax_scale(x, axis=axis)
-
-        # Создание картинки и отображение на ней.
-        plt.figure(figsize=figsize)
-        frames = range(len(spectral_centroids))
-        t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(x, sr=sr, alpha=0.4)
-        plt.plot(t, normalize(spectral_bandwidth_2), color='r')
-        plt.plot(t, normalize(spectral_bandwidth_3), color='g')
-        plt.plot(t, normalize(spectral_bandwidth_4), color='y')
-        plt.legend(('p = 2', 'p = 3', 'p = 4'))
 
     # ----------------------------------------------------------------------------------------------
 
