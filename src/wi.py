@@ -1,5 +1,5 @@
 """
-WAV inspect functionality.
+Реализация модуля по обработке аудиозаписей.
 """
 
 import os
@@ -18,11 +18,13 @@ import librosa.display
 
 def zipwith(a, b, f):
     """
-    Zip two lists with given function.
-    :param a: first list
-    :param b: second list
-    :param f: zip function
-    :return: zipped arrays
+    Слияние двух списков с использованием произвольной функции.
+
+    :param a: Первый список.
+    :param b: Второй список.
+    :param f: Функция объединения двух элементов в одну сущьность.
+
+    :return: Список, полученный в результате соедиения.
     """
 
     return [f(ai, bi) for (ai, bi) in zip(a, b)]
@@ -33,12 +35,16 @@ def zipwith(a, b, f):
 
 def indices_slice_array(ar_len, start, part_len, step):
     """
-    Get indices for array slicing.
-    :param ar_len: array length
-    :param start: start position
-    :param part_len: single part length
-    :param step: step between parts
-    :return: array of first indices
+    Получение списка кортежей, каждый из которых представляет собой индексы подсписков
+    при разделении исходного списка на части.
+
+    :param ar_len:   Исходная длина списка, для которого нужно выполнить разделение.
+    :param start:    Позиция, с которой следует начать разделение (все элементы до этой позиции
+                     игнорирутся).
+    :param part_len: Длина каждого кусочка, на которые делится исходный список.
+    :param step:     Шаг между точками начала двух соседних кусков.
+
+    :return: Список кортежей с координатами частей списка.
     """
 
     idx = [(i, i + part_len)
@@ -56,24 +62,26 @@ def show_graph(data, figsize=(20, 8),
                title='title', xlabel='', ylabel='',
                show_grid='true'):
     """
-    Show data on graph.
-    :param data: data, may be array of datas
-    :param figsize: figure size
-    :param style: line style, may be array of styles
-    :param linewidth: line width, may be array of linewidths
-    :param title: title
-    :param xlabel: X label
-    :param ylabel: Y label
-    :param show_grid: flag for show grid
+    Демонстрация графика или набора графиков.
+
+    :param data:      Массив данных для отображения (это могут быть данные одного графика
+                      или массив данных для нескольких графиков).
+    :param figsize:   Размер картинки.
+    :param style:     Стиль графика (или списов стилей, если графиков несколько).
+    :param linewidth: Ширина линии (или список ширин линий).
+    :param title:     Заголовок графика.
+    :param xlabel:    Надпись на оси OX.
+    :param ylabel:    Надпись на оси OY.
+    :param show_grid: Флаг отображения сетки.
     """
 
-    # Code for examples:
+    # Пример кода:
     # https://pythonru.com/biblioteki/pyplot-uroki
 
-    # Style:
-    # colors - 'b', 'g', 'r', 'y'.
-    # markers - '*', '^', 's'.
-    # line types - '--', '-.'.
+    # Примеры стилей графиков:
+    #   цвета      : 'b', 'g', 'r', 'y'
+    #   маркеры    : '*', '^', 's'
+    #   типы линий : '--', '-.'
 
     plt.figure(figsize=figsize)
     plt.title(title)
@@ -81,16 +89,16 @@ def show_graph(data, figsize=(20, 8),
     plt.ylabel(ylabel)
     plt.grid(show_grid)
 
-    # Plot all.
-    # Is the single data set is given, the style is just a string.
+    # Отображение.
+    # По типу параметра style определяем, подан ли на отображение один график или несколько.
     if type(style) is str:
 
-        # Single data set.
+        # График один.
         plt.plot(data, style, linewidth=linewidth)
 
     elif type(style) is list:
 
-        # Multiple datasets.
+        # Несколько графиков.
         for i in range(len(style)):
             plt.plot(data[i], style[i], linewidth=linewidth[i])
 
@@ -102,10 +110,12 @@ def show_graph(data, figsize=(20, 8),
 
 def min_without_some(ar, part):
     """
-    Minimum value from array with ignoring part of values.
-    :param ar: array
-    :param part: part for ignoring
-    :return: minimum values with ignoring 'part' of array
+    Получение минимального значение с игнорированием части значений.
+
+    :param ar:   Список.
+    :param part: Часть значений, которые нужно проигнорировать (0.0 <= part < 1.0).
+
+    :return: Минимальное значение списка с учетом проигнорированной части элементов.
     """
 
     i = int(len(ar) * part)
@@ -117,12 +127,15 @@ def min_without_some(ar, part):
 
 # --------------------------------------------------------------------------------------------------
 
+
 def apply_array_lo_bound(a, lo_bound):
     """
-    Apply low bound to array.
-    :param a: array
-    :param lo_bound: low bound
-    :return: new array after low bound correction
+    Применение фильтра нижней границы к списку.
+
+    :param a:        Список.
+    :param lo_bound: Нижняя граница значений.
+
+    :return: Новый список после применения фильтра.
     """
 
     return [max(ai, lo_bound) for ai in a]
@@ -132,9 +145,11 @@ def apply_array_lo_bound(a, lo_bound):
 
 def shift_array_to_min(a):
     """
-    Shift array to minimum value.
-    :param a: array
-    :return: shifted array
+    Сдвиг списка по нижней границе.
+
+    :param a: Список.
+
+    :return: Список, сдвинутый по нижней границе.
     """
 
     m = min(a)
