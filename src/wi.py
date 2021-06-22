@@ -475,8 +475,8 @@ class Channel:
         markers = [0] * n
 
         # Производим разметку.
-        for i in range(1, n):
-            is_snap = (d[i][0] - d[i - 1][0] > min_power_lo_threshold)
+        for i in range(2, n):
+            is_snap = (d[i][0] - d[i - 2][0] > min_power_lo_threshold)
             is_cnst = (d[i][1] - d[i][0] < diff_min_max_powers_hi_threshold)
             if is_snap and is_cnst:
                 markers[i] = 1
@@ -724,7 +724,7 @@ class WAV:
         :return: Список дефектов.
         """
 
-        return self.get_defect_snap_objs((0.7, 0.99), (0.05, 0.95), 5.0, 3.0)
+        return self.get_defect_snap_objs((0.7, 0.95), (0.25, 0.75), 5.0, 5.0)
 
 # ==================================================================================================
 
