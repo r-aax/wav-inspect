@@ -204,33 +204,39 @@ class Defect:
 
 
 class WAV:
+    """
+    Аудиоззапись.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self, filename=None):
         """
-        Init WAV.
-        :param filename: name of file
+        Конструктор аудиозаписи.
+
+        :param filename: Имя файла.
         """
 
-        # Name of file.
+        # Имя файла
+        # (в данном месте инициализировать нельзя, так как задание имени записи не гарантирует
+        # ее успешную загрузку, имя файла записывается в момент загрузки).
         self.FileName = None
 
-        # Array of amplitudes.
+        # Массив амплитуд.
         self.Y = None
 
-        # Sample rate.
+        # Частота дискретизации.
         self.SampleRate = None
 
-        # Duration.
+        # Продолжительность записи (с).
         self.Duration = None
 
-        # Spectres of two channels.
-        # 3-dimensional array:
-        #   (channels count) * (Y lines) * (X lines)
+        # Спектры записи.
+        # Представлены в виде 3d-массива:
+        #   (количество каналов) * (количество линий Y) * (количество линий X)
         self.Spectres = None
 
-        # If filename if given - load it.
+        # Если подано имя файла, то пытаемся загрузить его.
         if filename is not None:
             self.load(filename)
 
@@ -238,7 +244,10 @@ class WAV:
 
     def is_ok(self):
         """
-        :return: True - if it is a correct record, and it is loaded, False - otherwise
+        Проверка, является ли данная запись нормальной, то есть она загрузилась.
+
+        :return: True  - если запись успешно загружена,
+                 False - в противном случае.
         """
 
         return self.Y is not None
@@ -247,38 +256,42 @@ class WAV:
 
     def load(self, filename):
         """
-        Load WAV file.
-        :param filename: name of file
-        :return: True - if loading is completed, False - if loading faults.
+        Загрузка файла аудиозаписи.
+
+        :param filename: Имя файла.
+
+        :return: True  - если загрузка завершена успешно,
+                 False - если во время загрузки произвошел сбой.
         """
 
-        # Check for filename.
+        # Проверка расширения файла.
+        if pathlib.Path(filename).suffix != '.wav':
+            return False
+
+        # Проверка существования файла.
         if not os.path.isfile(filename):
             # print('No such file ({0}).'.format(filename))
             return False
 
-        # First of all, check file extension.
-        if pathlib.Path(filename).suffix != '.wav':
-            return False
-
-        # Load file.
+        # Загрузка файла.
         self.FileName = filename
         try:
             self.Y, self.SampleRate = librosa.load(filename, sr=None, mono=False)
         except BaseException:
-            # If there is some problem with file, just ignore it.
+            # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
             return False
 
-        # Calculate duration.
+        # Вычисляем продолжительность записи.
         self.Duration = librosa.get_duration(y=self.Y, sr=self.SampleRate)
 
+        # Загрузка прошла успешно.
         return True
 
     # ----------------------------------------------------------------------------------------------
 
     def summary(self):
         """
-        Print summary.
+        Печать общей информации об аудиозаписи.
         """
 
         print('WAV audio record: FileName       = {0}'.format(self.FileName))
@@ -293,10 +306,11 @@ class WAV:
 
     def generate_spectres(self):
         """
-        Generate spectres.
+        Генерация спектров.
         """
 
-        generate_spectre = lambda d: librosa.amplitude_to_db(abs(librosa.stft(d, n_fft=2048)))
+        def generate_spectre(d):
+            return librosa.amplitude_to_db(abs(librosa.stft(d, n_fft=2048)))
 
         self.Spectres = np.array([generate_spectre(d) for d in self.Y])
 
@@ -304,9 +318,11 @@ class WAV:
 
     def time_to_specpos(self, tx):
         """
-        Translate time position to specpos.
-        :param tx: time position
-        :return: specpos
+        Перевод точки времени в точку в матрице спектра.
+
+        :param tx: Точка сремени.
+
+        :return: Точка в спектре.
         """
 
         return int(tx * (self.Spectres.shape[-1] / self.Duration))
@@ -315,9 +331,11 @@ class WAV:
 
     def specpos_to_time(self, specpos):
         """
-        Translate position in spectre to time.
-        :param specpos: position in spectre
-        :return: time point
+        Перевод точки спектра в точку времени.
+
+        :param specpos: Точка в спектре.
+
+        :return: Точка времени.
         """
 
         return specpos * (self.Duration / self.Spectres.shape[-1])
@@ -326,12 +344,13 @@ class WAV:
 
     def show_wave(self, idx, figsize=(20, 8)):
         """
-        Show wave of the sound.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Демонстрация звуковой волны.
+
+        :param idx:     Индекс массива амплитуд.
+        :param figsize: Размер картинки.
         """
 
-        # Create figure and plot graph on it.
+        # Создание картинки и отображение волны на ней.
         plt.figure(figsize=figsize)
         librosa.display.waveplot(self.Y[idx], sr=self.SampleRate)
 
@@ -339,12 +358,13 @@ class WAV:
 
     def show_spectre(self, idx, figsize=(20, 8)):
         """
-        Show spectre.
-        :param idx: spectre index
-        :param figsize: figure size
+        Демонстрация спектра.
+
+        :param idx:     Индекс спектра.
+        :param figsize: Размер картинки.
         """
 
-        # Create figure and plot graphs onto it.
+        # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
         librosa.display.specshow(self.Spectres[idx],
                                  sr=self.SampleRate,
@@ -355,23 +375,24 @@ class WAV:
 
     def show_spectral_centroid(self, idx, figsize=(20, 8)):
         """
-        Show spectral centroid.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Демонстрация графика спектрального центроида.
+
+        :param idx:     Индекс массива амплитуд.
+        :param figsize: Размер картинки.
         """
 
-        # Code source:
+        # Пример кода:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
-        # Calculate centroid.
+        # Получение данных для отображения центроида.
         spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
                                                                sr=self.SampleRate)[0]
 
-        # Normalize data.
+        # Нормализация данных.
         def normalize(x, axis=0):
             return sklearn.preprocessing.minmax_scale(x, axis=axis)
 
-        # Create figure and plot on it.
+        # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
@@ -382,27 +403,28 @@ class WAV:
 
     def show_spectral_rolloff(self, idx, figsize=(20, 8)):
         """
-        Show spectral rolloff.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Демонстрация графика спектрального спада.
+
+        :param idx:     Индекс массива амплитуд.
+        :param figsize: Размер картинки.
         """
 
-        # Code source:
+        # Пример кода:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
-        # Calculate centroid.
+        # Получение данных массива спектрального центроида.
         spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
                                                                sr=self.SampleRate)[0]
 
-        # Calculate rolloff.
+        # Получение данных массива спектрального спада.
         spectral_rolloff = librosa.feature.spectral_rolloff(self.Y[idx] + 0.01,
                                                             sr=self.SampleRate)[0]
 
-        # Normalize data.
+        # Нормализация данных.
         def normalize(x, axis=0):
             return sklearn.preprocessing.minmax_scale(x, axis=axis)
 
-        # Create figure and plot.
+        # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
@@ -413,30 +435,31 @@ class WAV:
 
     def show_spectral_bandwidth(self, idx, figsize=(20, 8)):
         """
-        Show spectral bandwidth.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Демострация спектральной ширины.
+
+        :param idx:     Индекс массива амплитуд.
+        :param figsize: Размер картинки.
         """
 
-        # Code source:
+        # Пример кода:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
-        # Calculate centroid.
+        # Вычисление данных спектрального центроида.
         spectral_centroids = librosa.feature.spectral_centroid(self.Y[idx],
                                                                sr=self.SampleRate)[0]
 
-        # Construct bandwidth.
+        # Вычисление данных спектральной ширины.
         x = self.Y[idx]
         sr = self.SampleRate
         spectral_bandwidth_2 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr)[0]
         spectral_bandwidth_3 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=3)[0]
         spectral_bandwidth_4 = librosa.feature.spectral_bandwidth(x + 0.01, sr=sr, p=4)[0]
 
-        # Normalize data.
+        # Нормализациия данных.
         def normalize(x, axis=0):
             return sklearn.preprocessing.minmax_scale(x, axis=axis)
 
-        # Create figure and plot on it.
+        # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
@@ -450,9 +473,11 @@ class WAV:
 
     def normalize_spectre_value(self, idx):
         """
-        Value for normalize spectre to shift minimum power to zero db.
-        :param idx: indxes of amplitudes array
-        :return: normalize spectre value
+        Значение для нормализации спектра.
+
+        :param idx: Индекс спектра.
+
+        :return: Значение для нормализации.
         """
 
         return -self.Spectres[idx].min()
@@ -461,9 +486,10 @@ class WAV:
 
     def show_graph_spectre_total_power(self, idx, figsize=(20, 8)):
         """
-        Show graph spectre total power.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Демонстрация графика суммарной энергии спектра.
+
+        :param idx:     Номер канала.
+        :param figsize: Размер картинки.
         """
 
         m = self.Spectres[idx].transpose()
@@ -474,11 +500,12 @@ class WAV:
 
     def get_min_power_data(self, idx, ignore_min_powers_part):
         """
-        Get min power data.
-        :param idx: index of amplitudes array
-        :param ignore_min_powers_part: part of min values in column those are ignored
-                                       when we detect minimum value in column
-        :return: min power data
+        Получение данных минимальной энергии.
+
+        :param idx:                    Номер канала.
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+
+        :return: Данные о минимальной энергии.
         """
 
         m = self.Spectres[idx].transpose()
@@ -489,11 +516,11 @@ class WAV:
 
     def show_graph_spectre_min_max_power(self, idx, ignore_min_powers_part, figsize=(20, 8)):
         """
-        Show graph spectre minimum and maximum power.
-        :param idx: index of amplitudes array
-        :param ignore_min_powers_part: part of min values in column those are ignored
-                                       when we detect minimum value in column
-        :param figsize: figure size
+        Демонстрация графиков минимальной и максимальной силы звука.
+
+        :param idx:                    Номер канала.
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param figsize:                Размер картинки.
         """
 
         m = self.Spectres[idx].transpose()
@@ -508,13 +535,14 @@ class WAV:
     def get_min_power_leap_markers(self, idx,
                                    ignore_min_powers_part, power_lo_bound, leap_threshold):
         """
-        Get min power leap markers.
-        :param idx: index of amplitudes array
-        :param ignore_min_powers_part: part of min values in column those are ignored
-                                       when we detect minimum value in column
-        :param power_lo_bound: low bound of power for analysis (in DB)
-        :param leap_threshold: threshold for leap detection (in DB)
-        :return: array of leap markers
+        Генерация маркеров скачков минимальной силы.
+
+        :param idx:                    Номер канала.
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param power_lo_bound:         Нижняя граница силы (DB).
+        :param leap_threshold:         Порог определения скачка (DB).
+
+        :return: Массив маркеров скачков.
         """
 
         d1 = self.get_min_power_data(idx, ignore_min_powers_part)
@@ -529,13 +557,13 @@ class WAV:
                                                   ignore_min_powers_part, power_lo_bound,
                                                   leap_threshold, figsize=(20, 8)):
         """
-        Show graph with min power leap markers.
-        :param idx: index of amplitudes array
-        :param ignore_min_powers_part: part of min values in column those are ignored
-                                       when we detect minimum value in column
-        :param power_lo_bound: low bound of power for analysis (in DB)
-        :param leap_threshold: threshold for leap detection (in DB)
-        :param figsize: figure size
+        Демонстрация графика скачков минимальной силы.
+
+        :param idx:                    Номер канала.
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param power_lo_bound:         Нижняя граница силы (DB).
+        :param leap_threshold:         Порог определения скачка (DB).
+        :param figsize:                Размер картинки.
         """
 
         m = self.Spectres[idx].transpose()
@@ -548,18 +576,19 @@ class WAV:
 
     def show_graph_spectre_total_power_with_high_accent(self, idx, figsize=(20, 8)):
         """
-        Show graph spectre total power when high frequences are taken with big weights.
-        :param idx: index of amplitudes array
-        :param figsize: figure size
+        Показ графика суммарной силы с акцентом на высокие частоты.
+
+        :param idx:     Номер канала.
+        :param figsize: Размер картинки.
         """
 
         n = self.normalize_spectre_value(idx)
         m = self.Spectres[idx].transpose()
 
-        # Weights.
+        # Веса по частотам.
         w = [i * i for i in range(len(m[0]))]
 
-        # Form data for plot.
+        # Формируем данные для графика.
         d = [sum(zipwith(c, w, lambda ci, wi: (ci + n) * wi))
              for c in m]
 
@@ -573,13 +602,14 @@ class WAV:
                                            leap_threshold=5.0,
                                            leap_half_width=2):
         """
-        Detect defect due to min power.
-        :param ignore_min_powers_part: part of min values in column those are ignored
-                                       when we detect minimum value in column
-        :param power_lo_bound: low bound of power for analysis (in DB)
-        :param leap_threshold: threshold for leap detection (in DB)
-        :param leap_half_width: half width for leap (in frames)
-        :return: defects list
+        Детектирование дефекта скачка минимальной силы.
+
+        :param ignore_min_powers_part: Часть минимальных значений, которые нужно проигнорировать.
+        :param power_lo_bound:         Нижняя граница силы (DB).
+        :param leap_threshold:         Порог определения скачка (DB).
+        :param leap_half_width:        Ограничение на полудлину прыжка.
+
+        :return: Список дефектов.
         """
 
         dfs = []
@@ -616,8 +646,9 @@ class WAV:
 
     def detect_defects(self):
         """
-        Detect defects.
-        :return: defects list
+        Определение дефектов.
+
+        :return: Список дефектов.
         """
 
         return self.detect_defect_min_power_short_leap()
@@ -627,7 +658,7 @@ class WAV:
 
 if __name__ == '__main__':
 
-    # Unit tests.
+    # Тесты.
 
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
@@ -636,10 +667,10 @@ if __name__ == '__main__':
     # min_without_part
     assert min_without_some([2, 1, 3, 5, 2], 0.0) == 1
 
-    # Main test.
+    # Тело основного теста.
 
     directory = 'wavs/origin'
-    # tests = os.listdir('wavs/origin')
+    # tests = os.listdir(directory)
     tests = ['0015.wav']
     print(tests)
     defects = []
