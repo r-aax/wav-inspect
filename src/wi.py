@@ -714,6 +714,39 @@ class WAV:
 # ==================================================================================================
 
 
+def analyze_directory(directory, filter_fun=lambda _x: True,
+                      verbose=False):
+    """
+    Анализ директории с файлами на наличие дефектов.
+
+    :param directory:  Имя директории.
+    :param filter_fun: Дополнительная функция для отфильтровывания файлов, которые необходимо
+                       анализировать.
+    :param verbose:    Признак печати процесса анализа.
+
+    :return: Список дефектов.
+    """
+
+    fs = os.listdir(directory)
+    ds = []
+
+    for f in fs:
+        if filter_fun(f):
+
+            if verbose:
+                print('.... process {0}'.format(f))
+
+            wav = WAV('{0}/{1}'.format(directory, f))
+
+            if wav.is_ok():
+                wav.generate_spectres()
+                ds = ds + wav.get_defects()
+
+    return ds
+
+# ==================================================================================================
+
+
 if __name__ == '__main__':
 
     # Тесты.
@@ -724,20 +757,11 @@ if __name__ == '__main__':
 
     # Тело основного теста.
 
-    directory = 'wavs/origin'
-    tests = os.listdir(directory)
-    # tests = ['0015.wav']
-    print(tests)
-    defects = []
+    defects = analyze_directory('wavs/origin',
+                                filter_fun=lambda f: True,
+                                verbose=True)
 
-    for test in tests:
-        print('... process {0}'.format(test))
-        wav = WAV('{0}/{1}'.format(directory, test))
-        if wav.is_ok():
-            wav.generate_spectres()
-            defects = defects + wav.get_defects()
-
-    for defect in defects:
-        print('  {0}'.format(defect))
+    for d in defects:
+        print(d)
 
 # ==================================================================================================
