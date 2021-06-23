@@ -11,6 +11,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
+import keras
+import keras.utils
+import keras.utils.np_utils
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.optimizers import RMSprop
 
 
 # ==================================================================================================
@@ -714,6 +721,82 @@ class WAV:
 # ==================================================================================================
 
 
+class NNet:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self):
+        """
+        Конструктор нейронной сети.
+        """
+
+        # Обучающие и валидационные данные.
+        self.XTrain = None
+        self.YTrain = None
+        self.XTest = None
+        self.YTest = None
+
+        # Модель.
+        self.Model = None
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_data(self):
+        """
+        Инициализация данных для обучения.
+        """
+
+        # Загрузка данных.
+        (self.XTrain, self.YTrain), (self.XTest, self.YTest) = mnist.load_data()
+
+        # Обработка данных X.
+        self.XTrain = self.XTrain.reshape(60000, 784)
+        self.XTest = self.XTest.reshape(10000, 784)
+        self.XTrain = self.XTrain.astype('float32')
+        self.XTest = self.XTest.astype('float32')
+        self.XTrain /= 255
+        self.XTest /= 255
+
+        # Обработка данных Y.
+        self.YTrain = keras.utils.np_utils.to_categorical(self.YTrain, 10)
+        self.YTest = keras.utils.np_utils.to_categorical(self.YTest, 10)
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_model(self):
+        """
+        Инициализация модели.
+        """
+
+        # Сборка модели.
+        self.Model = Sequential()
+        self.Model.add(Dense(512, activation='relu', input_shape=(784,)))
+        self.Model.add(Dropout(0.2))
+        self.Model.add(Dense(512, activation='relu'))
+        self.Model.add(Dropout(0.2))
+        self.Model.add(Dense(10, activation='softmax'))
+
+        # Компиляция модели.
+        self.Model.compile(loss='categorical_crossentropy',
+                           optimizer=RMSprop(),
+                           metrics=['accuracy'])
+
+    # ----------------------------------------------------------------------------------------------
+
+    def fit(self):
+        """
+        Обучение модели.
+        """
+
+        self.Model.fit(self.XTrain, self.YTrain,
+                       batch_size=128,
+                       epochs=20,
+                       verbose=1,
+                       validation_data=(self.XTest, self.YTest))
+
+# ==================================================================================================
+
+
 def analyze_directory(directory, filter_fun=lambda _x: True,
                       verbose=False):
     """
@@ -747,15 +830,35 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
 # ==================================================================================================
 
 
-if __name__ == '__main__':
-
-    # Тесты.
+def unit_tests():
+    """
+    Короткие тесты.
+    """
 
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
 
-    # Тело основного теста.
+# ==================================================================================================
+
+
+def nnet_test():
+    """
+    Тест нейронки.
+    """
+
+    nnet = NNet()
+    nnet.init_data()
+    nnet.init_model()
+    nnet.fit()
+
+# ==================================================================================================
+
+
+def main():
+    """
+    Головная функция.
+    """
 
     defects = analyze_directory('wavs/origin',
                                 filter_fun=lambda f: True,
@@ -763,5 +866,13 @@ if __name__ == '__main__':
 
     for d in defects:
         print(d)
+
+
+# ==================================================================================================
+
+
+if __name__ == '__main__':
+    nnet_test()
+
 
 # ==================================================================================================
