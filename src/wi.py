@@ -721,14 +721,17 @@ class WAV:
 # ==================================================================================================
 
 
-class NNet:
+class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self):
+    def __init__(self, name):
         """
         Конструктор нейронной сети.
         """
+
+        # Имя сети.
+        self.Name = name
 
         # Обучающие и валидационные данные.
         self.XTrain = None
@@ -744,6 +747,18 @@ class NNet:
     def init_data(self):
         """
         Инициализация данных для обучения.
+        """
+
+        if self.Name == 'mnist':
+            self.init_data_mnist()
+        else:
+            raise Exception('unknown nnet name {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_data_mnist(self):
+        """
+        Инициализация данных mnist для обучения.
         """
 
         # Загрузка данных.
@@ -765,7 +780,19 @@ class NNet:
 
     def init_model(self):
         """
-        Инициализация модели.
+        Иницализация модели.
+        """
+
+        if self.Name == 'mnist':
+            self.init_model_mnist()
+        else:
+            raise Exception('unknown nnet {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_model_mnist(self):
+        """
+        Инициализация модели mnist.
         """
 
         # Сборка модели.
@@ -788,11 +815,32 @@ class NNet:
         Обучение модели.
         """
 
+        if self.Name == 'mnist':
+            self.fit_mnist()
+        else:
+            raise Exception('unknown nnet {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def fit_mnist(self):
+        """
+        Обучение модели mnist.
+        """
+
         self.Model.fit(self.XTrain, self.YTrain,
                        batch_size=128,
                        epochs=20,
                        verbose=1,
                        validation_data=(self.XTest, self.YTest))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def save(self):
+        """
+        Сохранение модели.
+        """
+
+        self.Model.save('nnets/{0}.h5'.format(self.Name))
 
 # ==================================================================================================
 
@@ -847,10 +895,11 @@ def nnet_test():
     Тест нейронки.
     """
 
-    nnet = NNet()
-    nnet.init_data()
-    nnet.init_model()
-    nnet.fit()
+    nn = NNetTrainer('mnist')
+    nn.init_data()
+    nn.init_model()
+    nn.fit()
+    nn.save()
 
 # ==================================================================================================
 
