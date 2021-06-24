@@ -273,17 +273,17 @@ class DefectsSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 defect_snap_settings,
-                 defect_muted_settings):
+                 snap,
+                 muted):
         """
         Конструктор настроек для всех дефектов.
 
-        :param defect_snap_settings:  Настройки дефекта snap.
-        :param defect_muted_settings: Настройки дефекта muted.
+        :param snap:  Настройки дефекта snap.
+        :param muted: Настройки дефекта muted.
         """
 
-        self.DefectSnapSettings = defect_snap_settings
-        self.DefectMutedSettings = defect_muted_settings
+        self.Snap = snap
+        self.Muted = muted
 
 # ==================================================================================================
 
@@ -815,16 +815,16 @@ class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, st, name):
+    def __init__(self, s, name):
         """
         Конструктор нейронной сети.
 
-        :param st:   Настройки дефектов.
+        :param s:    Настройки дефектов.
         :param name: Имя дефекта (и соответствующей нейронки).
         """
 
         # Настройки.
-        self.DefectsSettings = st
+        self.DefectsSettings = s
 
         # Имя сети.
         self.Name = name
@@ -881,8 +881,7 @@ class NNetTrainer:
                 is_pos = 0
 
             # Ограничители спектра.
-            min_val = self.DefectsSettings.DefectMutedSettings.LimitsDb[0]
-            max_val = self.DefectsSettings.DefectMutedSettings.LimitsDb[1]
+            min_val, max_val = self.DefectsSettings.Muted.LimitsDb
 
             # Функция ограничения спектра по минимальному и максимальному значениям.
             def normalize_el(e):
@@ -1119,14 +1118,33 @@ def unit_tests():
 # ==================================================================================================
 
 
-def nnet_test(st: DefectsSettings):
+def get_settings():
+    """
+    Получение настройки.
+
+    :return: Настройки.
+    """
+
+    defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
+                                              limits_after_sort=(0.25, 0.75),
+                                              min_power_lo_threshold=5.0,
+                                              half_snap_len=2,
+                                              diff_min_max_powers_hi_threshold=5.0)
+    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
+
+    return DefectsSettings(snap=defect_snap_settings,
+                           muted=defect_muted_settings)
+
+
+# ==================================================================================================
+
+
+def nnet_test():
     """
     Тест нейронки.
-
-    :param st: Настройки.
     """
 
-    nn = NNetTrainer(st, 'muted')
+    nn = NNetTrainer(get_settings(), 'muted')
     nn.init_data()
     nn.init_model()
     nn.fit()
@@ -1151,29 +1169,8 @@ def main():
 # ==================================================================================================
 
 
-def get_settings():
-    """
-    Получение настройки.
-
-    :return: Настройки.
-    """
-
-    defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
-                                              limits_after_sort=(0.25, 0.75),
-                                              min_power_lo_threshold=5.0,
-                                              half_snap_len=2,
-                                              diff_min_max_powers_hi_threshold=5.0)
-    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
-
-    return DefectsSettings(defect_snap_settings=defect_snap_settings,
-                           defect_muted_settings=defect_muted_settings)
-
-
-# ==================================================================================================
-
-
 if __name__ == '__main__':
-    nnet_test(get_settings())
+    nnet_test()
 
 
 # ==================================================================================================
