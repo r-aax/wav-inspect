@@ -24,6 +24,31 @@ from keras.optimizers import RMSprop
 # ==================================================================================================
 
 
+def norm_01(v, b):
+    """
+    Нормирование значение с учетом нижней и верхней границы.
+    Значения, выходящие за пределы поданных границ, обрезаются.
+    Значения, попадающие в заданные границы, приводятся к отрезку [0.0; 1.0].
+
+    :param v: Значение.
+    :param b: Границы.
+
+    :return: Значение, приведенное к [0.0; 1.0].
+    """
+
+    b_min, b_max = b
+
+    if v < b_min:
+        return 0.0
+    elif v > b_max:
+        return 1.0
+    else:
+        return (v - b_min) / (b_max - b_min)
+
+
+# ==================================================================================================
+
+
 def zipwith(a, b, f):
     """
     Слияние двух списков с использованием произвольной функции.
@@ -906,26 +931,16 @@ class NNetTrainer:
             else:
                 is_pos = 0
 
-            # Ограничители спектра.
-            min_val, max_val = self.DefectsSettings.Muted.LimitsDb
-
-            # Функция ограничения спектра по минимальному и максимальному значениям.
-            def normalize_el(e):
-                if e < min_val:
-                    return 0.0
-                elif e > max_val:
-                    return 1.0
-                else:
-                    return (e - min_val) / (max_val - min_val)
-
             wav = WAV('{0}/{1}'.format(directory, file))
-            wav.generate_spectres(normalize_el)
+            wav.generate_spectres(lambda e: norm_01(e, self.DefectsSettings.Muted.LimitsDb))
 
             if wav.is_ok():
                 for ch in wav.Channels:
-                    all_xs = all_xs + ch.get_nnet_data_cases(self.DefectsSettings.Muted.CaseWidth,
-                                                             self.DefectsSettings.Muted.CaseStep)
-                    all_ys = all_ys + [is_pos] * len(all_xs)
+                    loc_xs = ch.get_nnet_data_cases(self.DefectsSettings.Muted.CaseWidth,
+                                                    self.DefectsSettings.Muted.CaseStep)
+                    loc_ys = [is_pos] * len(loc_xs)
+                    all_xs = all_xs + loc_xs
+                    all_ys = all_ys + loc_ys
 
         print('init_data_muted : collect : {0}'.format(time.time() - t0))
 
