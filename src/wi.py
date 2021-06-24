@@ -969,15 +969,28 @@ class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
+    def is_data_inited(self):
+        """
+        Проверка того, что данные инициализированы.
+
+        :return: True  - если данные инициализированы,
+                 False - в противном случае.
+        """
+
+        is_x_inited = (self.XTrain is not None) and (self.XTest is not None)
+        is_y_inited = (self.YTrain is not None) and (self.YTest is not None)
+
+        return is_x_inited and is_y_inited
+
+    # ----------------------------------------------------------------------------------------------
+
     def init_model(self):
         """
         Иницализация модели.
         """
 
         # Не собираем модель, если данные не готовы.
-        is_x_none = (self.XTrain is None) or (self.XTest is None)
-        is_y_none = (self.YTrain is None) or (self.YTest is None)
-        if is_x_none or is_y_none:
+        if not self.is_data_inited():
             return
 
         if self.Name == 'muted':
@@ -1030,17 +1043,27 @@ class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
+    def is_model_inited(self):
+        """
+        Проверка того, что модель инициализирована.
+
+        :return: True  - если модель инициализирована,
+                 False - в противном случае.
+        """
+
+        return self.Model is not None
+
+    # ----------------------------------------------------------------------------------------------
+
     def fit(self):
         """
         Обучение модели.
         """
 
         # Не учимся, если данные или модель не готовы.
-        is_x_none = (self.XTrain is None) or (self.XTest is None)
-        is_y_none = (self.YTrain is None) or (self.YTest is None)
-        if is_x_none or is_y_none:
+        if not self.is_data_inited():
             return
-        if self.Model is None:
+        if not self.is_model_inited():
             return
 
         if self.Name == 'muted':
