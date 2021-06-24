@@ -664,14 +664,18 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, s: DefectMutedSettings):
+    def get_defects_muted(self, s: DefectMutedSettings, nnet):
         """
         Получение дефектов muted.
 
-        :param s: Настройки.
+        :param s:    Настройки.
+        :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
+
+        if nnet is None:
+            return []
 
         return []
 
@@ -834,30 +838,32 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, s: DefectMutedSettings):
+    def get_defects_muted(self, s: DefectMutedSettings, nnet):
         """
         Получение маркеров дефекта muted.
 
-        :param s: Настройки.
+        :param s:    Настройки.
+        :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
 
-        return self.ch0().get_defects_muted(s) + self.ch1().get_defects_muted(s)
+        return self.ch0().get_defects_muted(s, nnet) + self.ch1().get_defects_muted(s, nnet)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self, s: DefectsSettings):
+    def get_defects(self, s: DefectsSettings, nnets):
         """
         Определение дефектов.
 
-        :param s: Настройки.
+        :param s:     Настройки.
+        :param nnets: Семейство нейросетей.
 
         :return: Список дефектов.
         """
 
         return self.get_defects_snap(s.Snap) + \
-               self.get_defects_muted(s.Muted)
+               self.get_defects_muted(s.Muted, nnets.Muted)
 
 # ==================================================================================================
 
@@ -1132,6 +1138,33 @@ class NNetTrainer:
 # ==================================================================================================
 
 
+class NNetsFamily:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self):
+        """
+        Конструктор семейства нейросетей.
+        """
+
+        self.Muted = None
+
+        # Загружаем все что есть.
+        self.load()
+
+    # ----------------------------------------------------------------------------------------------
+
+    def load(self):
+        """
+        Загрузка имеющихся нейросетей.
+        """
+
+        if os.path.isfile('nnets/muted.h5'):
+            self.Muted = keras.models.load_model('nnets/muted.h5')
+
+# ==================================================================================================
+
+
 def get_settings():
     """
     Получение настроек.
@@ -1171,6 +1204,9 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
 
     s = get_settings()
 
+    # Подгрузка нейросетей.
+    nnets = NNetsFamily()
+
     fs = os.listdir(directory)
     ds = []
 
@@ -1184,7 +1220,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
 
             if wav.is_ok():
                 wav.generate_spectres()
-                ds = ds + wav.get_defects(s)
+                ds = ds + wav.get_defects(s, nnets)
 
     return ds
 
@@ -1220,14 +1256,14 @@ def nnet_test():
 # ==================================================================================================
 
 
-def main():
+def main(filter_fun=lambda f: True):
     """
     Головная функция.
+
+    :param filter_fun: Функция отбора файлов для детектирования дефектов.
     """
 
-    defects = analyze_directory('wavs/origin',
-                                filter_fun=lambda f: True,
-                                verbose=True)
+    defects = analyze_directory('wavs/origin', filter_fun=filter_fun, verbose=True)
 
     for d in defects:
         print(d)
@@ -1237,7 +1273,8 @@ def main():
 
 
 if __name__ == '__main__':
-    nnet_test()
+    # nnet_test()
+    main()
 
 
 # ==================================================================================================
