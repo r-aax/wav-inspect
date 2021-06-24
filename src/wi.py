@@ -910,7 +910,7 @@ class NNetTrainer:
 
                     # Получаем длину транспонированного спектра по оси, соответствующей времени
                     # и вычисляем индексы элементов данного массива при разбивке на кейсы.
-                    alen = ch.TSpectre.shape[0]
+                    alen = ch.NNetData.shape[0]
                     idxs = indices_slice_array(alen, 0,
                                                self.DefectsSettings.Muted.CaseWidth,
                                                self.DefectsSettings.Muted.CaseStep)
@@ -1114,7 +1114,7 @@ class NNetTrainer:
 
 def get_settings():
     """
-    Получение настройки.
+    Получение настроек.
 
     :return: Настройки.
     """
@@ -1195,6 +1195,7 @@ def nnet_test():
     nn.init_model()
     nn.fit()
     nn.save()
+
 
 # ==================================================================================================
 
