@@ -252,6 +252,22 @@ class DefectSnapSettings:
 # ==================================================================================================
 
 
+class DefectMutedSettings:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self, limits_db):
+        """
+        Конструктор дефекта глухой записи.
+
+        :param limits_db: Лимиты по силе (за пределами лимитов вообще не учитываем сигнал).
+        """
+
+        self.LimitsDb = limits_db
+
+# ==================================================================================================
+
+
 class Channel:
     """
     Канал.
@@ -575,6 +591,19 @@ class Channel:
 
         return objs
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_muted(self, s: DefectMutedSettings):
+        """
+        Получение дефектов muted.
+
+        :param s: Настройки.
+
+        :return: Список дефектов muted.
+        """
+
+        return []
+
 # ==================================================================================================
 
 
@@ -734,6 +763,19 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_muted(self, s: DefectMutedSettings):
+        """
+        Получение маркеров дефекта muted.
+
+        :param s: Настройки.
+
+        :return: Список дефектов muted.
+        """
+
+        return self.ch0().get_defects_muted(s) + self.ch1().get_defects_muted(s)
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects(self):
         """
         Определение дефектов.
@@ -747,7 +789,10 @@ class WAV:
                                                   half_snap_len=2,
                                                   diff_min_max_powers_hi_threshold=5.0)
 
-        return self.get_defects_snap(defect_snap_settings)
+        defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
+
+        return self.get_defects_snap(defect_snap_settings) + \
+               self.get_defects_muted(defect_muted_settings)
 
 # ==================================================================================================
 
