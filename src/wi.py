@@ -749,10 +749,21 @@ class NNetTrainer:
         Инициализация данных для обучения.
         """
 
-        if self.Name == 'mnist':
+        if self.Name == 'muted':
+            self.init_data_muted()
+        elif self.Name == 'mnist':
             self.init_data_mnist()
         else:
             raise Exception('unknown nnet name {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_data_muted(self):
+        """
+        Инициализация данных muted для обучения.
+        """
+
+        pass
 
     # ----------------------------------------------------------------------------------------------
 
@@ -783,10 +794,21 @@ class NNetTrainer:
         Иницализация модели.
         """
 
-        if self.Name == 'mnist':
+        if self.Name == 'muted':
+            self.init_model_muted()
+        elif self.Name == 'mnist':
             self.init_model_mnist()
         else:
             raise Exception('unknown nnet {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def init_model_muted(self):
+        """
+        Инициализация модели muted.
+        """
+
+        pass
 
     # ----------------------------------------------------------------------------------------------
 
@@ -815,10 +837,21 @@ class NNetTrainer:
         Обучение модели.
         """
 
-        if self.Name == 'mnist':
+        if self.Name == 'muted':
+            self.fit_muted()
+        elif self.Name == 'mnist':
             self.fit_mnist()
         else:
             raise Exception('unknown nnet {0}'.format(self.Name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def fit_muted(self):
+        """
+        Обучение модели muted.
+        """
+
+        pass
 
     # ----------------------------------------------------------------------------------------------
 
@@ -840,7 +873,8 @@ class NNetTrainer:
         Сохранение модели.
         """
 
-        self.Model.save('nnets/{0}.h5'.format(self.Name))
+        if self.Model is not None:
+            self.Model.save('nnets/{0}.h5'.format(self.Name))
 
 # ==================================================================================================
 
@@ -895,7 +929,7 @@ def nnet_test():
     Тест нейронки.
     """
 
-    nn = NNetTrainer('mnist')
+    nn = NNetTrainer('muted')
     nn.init_data()
     nn.init_model()
     nn.fit()
