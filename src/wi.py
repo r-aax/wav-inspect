@@ -3,6 +3,7 @@
 """
 
 import os
+import time
 import pathlib
 import random
 import operator
@@ -16,7 +17,7 @@ import keras.utils
 import keras.utils.np_utils
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, MaxPooling2D, Conv2D, Flatten
 from keras.optimizers import RMSprop
 
 
@@ -50,6 +51,22 @@ def unzip(a):
     """
 
     return tuple([list(ai) for ai in zip(*a)])
+
+
+# --------------------------------------------------------------------------------------------------
+
+
+def split(ar, pos):
+    """
+    Разделение списка по позиции.
+
+    :param ar:  Список.
+    :param pos: Позиция.
+
+    :return: Разделенный список.
+    """
+
+    return ar[:pos], ar[pos:]
 
 
 # --------------------------------------------------------------------------------------------------
@@ -258,14 +275,18 @@ class Channel:
         self.Y = y
         self.Spectre = None
         self.TSpectre = None
+        self.NNetData = None
         self.SampleRate = sample_rate
         self.Duration = duration
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectre(self):
+    def generate_spectre(self, normalize_for_nnet_fun):
         """
         Генерация спектра.
+
+        :param normalize_for_nnet_fun: Функция обработки элементов спектра
+                                       для подготовки к применению нейросетей.
         """
 
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
@@ -273,6 +294,13 @@ class Channel:
         # Транспонируем матрицу звука, чтобы первым измерением была отметка времени.
         # При этом удобнее работать с матрицей, если в нижних частях массива лежат низкие частоты.
         self.TSpectre = self.Spectre.transpose()
+
+        # Если задана функция
+        if normalize_for_nnet_fun is not None:
+            self.NNetData = self.TSpectre + 0.0
+            for i in range(self.NNetData.shape[0]):
+                for j in range(self.NNetData.shape[1]):
+                    self.NNetData[i][j] = normalize_for_nnet_fun(self.NNetData[i][j])
 
     # ----------------------------------------------------------------------------------------------
 
@@ -680,13 +708,16 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectres(self):
+    def generate_spectres(self, normalize_for_nnet_fun=None):
         """
         Генерация спектров.
+
+        :param normalize_for_nnet_fun: Функция обработки элементов спектра
+                                       для подготовки к применению нейросетей.
         """
 
         for ch in self.Channels:
-            ch.generate_spectre()
+            ch.generate_spectre(normalize_for_nnet_fun)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -763,7 +794,80 @@ class NNetTrainer:
         Инициализация данных muted для обучения.
         """
 
-        pass
+        t0 = time.time()
+        print('init_data_muted : start : {0}'.format(time.time() - t0))
+
+        # Директория и набор файлов для позитивных и негативных тестов.
+        directory = 'wavs/origin'
+        pos_files = ['0003.wav']
+        neg_files = ['0004.wav']
+        files = pos_files + neg_files
+
+        all_xs = []
+        all_ys = []
+
+        # Обработка всех тестов.
+        for file in files:
+
+            # Получаем флаг позитивного кейса.
+            if file in pos_files:
+                is_pos = 1
+            else:
+                is_pos = 0
+
+            # Ограничители спектра.
+            min_val = -10.0
+            max_val = 10.0
+
+            # Функция ограничения спектра по минимальному и максимальному значениям.
+            def normalize_el(e):
+                if e < min_val:
+                    return 0.0
+                elif e > max_val:
+                    return 1.0
+                else:
+                    return (e - min_val) / (max_val - min_val)
+
+            wav = WAV('{0}/{1}'.format(directory, file))
+            wav.generate_spectres(normalize_el)
+
+            if wav.is_ok():
+                for ch in wav.Channels:
+
+                    # Получаем длину транспонированного спектра по оси, соответствующей времени
+                    # и вычисляем индексы элементов данного массива при разбивке на кейсы.
+                    alen = ch.TSpectre.shape[0]
+                    idxs = indices_slice_array(alen, 0, 16, 10)
+
+                    for (fr, to) in idxs:
+
+                        # Вырезаем отдельный кейс и добавляем его в набор данных.
+                        case = ch.NNetData[fr:to]
+                        all_xs.append(case)
+                        all_ys.append(is_pos)
+
+        print('init_data_muted : collect : {0}'.format(time.time() - t0))
+
+        # Перемешаваем данные.
+        all_data = list(zip(all_xs, all_ys))
+        random.shuffle(all_data)
+        all_xs, all_ys = unzip(all_data)
+        all_xs = np.array(all_xs)
+        shp = all_xs.shape
+        all_xs = all_xs.reshape((shp[0], shp[1] * shp[2]))
+        all_xs = all_xs.astype('float32')
+        all_ys = keras.utils.np_utils.to_categorical(all_ys, 2)
+
+        print('init_data_muted : shuffle : {0}'.format(time.time() - t0))
+
+        # Позиция для разделения данных на обучающую и тестовую выборки.
+        p = int(len(all_xs) * 0.8)
+        self.XTrain, self.XTest = split(all_xs, p)
+        self.YTrain, self.YTest = split(all_ys, p)
+
+        print('init_data_muted : '
+              '{0} train and {1} test cases are constructed : '
+              '{2}'.format(len(self.XTrain), len(self.XTest), time.time() - t0))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -808,7 +912,19 @@ class NNetTrainer:
         Инициализация модели muted.
         """
 
-        pass
+        # Сборка модели.
+        self.Model = Sequential()
+        self.Model.add(Dense(16, activation='relu', input_shape=(16 * 1025,)))
+        self.Model.add(Dropout(0.2))
+        self.Model.add(Dense(16, activation='relu'))
+        self.Model.add(Dropout(0.2))
+        self.Model.add(Dense(2, activation='softmax'))
+
+        # Компиляция модели.
+        self.Model.compile(optimizer='adam',
+                           loss='binary_crossentropy',
+                           metrics=['accuracy'])
+        self.Model.summary()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -837,6 +953,14 @@ class NNetTrainer:
         Обучение модели.
         """
 
+        # Не учимся, если данные или модель не готовы.
+        is_x_none = (self.XTrain is None) or (self.XTest is None)
+        is_y_none = (self.YTrain is None) or (self.YTest is None)
+        if is_x_none or is_y_none:
+            return
+        if self.Model is None:
+            return
+
         if self.Name == 'muted':
             self.fit_muted()
         elif self.Name == 'mnist':
@@ -851,7 +975,11 @@ class NNetTrainer:
         Обучение модели muted.
         """
 
-        pass
+        self.Model.fit(self.XTrain, self.YTrain,
+                       batch_size=128,
+                       epochs=20,
+                       verbose=1,
+                       validation_data=(self.XTest, self.YTest))
 
     # ----------------------------------------------------------------------------------------------
 
