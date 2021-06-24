@@ -376,6 +376,22 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_nnet_data_cases(self, width, step):
+        """
+        Получение данные для нейросетей, порезанных на части.
+
+        :param width: Ширина кейса.
+        :param step:  Шаг между кейсами.
+
+        :return: Список кейсов для нейросети.
+        """
+
+        idxs = indices_slice_array(self.NNetData.shape[0], 0, width, step)
+
+        return [self.NNetData[fr:to] for (fr, to) in idxs]
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_wave(self, figsize=(20, 8)):
         """
         Демонстрация звуковой волны.
@@ -907,20 +923,9 @@ class NNetTrainer:
 
             if wav.is_ok():
                 for ch in wav.Channels:
-
-                    # Получаем длину транспонированного спектра по оси, соответствующей времени
-                    # и вычисляем индексы элементов данного массива при разбивке на кейсы.
-                    alen = ch.NNetData.shape[0]
-                    idxs = indices_slice_array(alen, 0,
-                                               self.DefectsSettings.Muted.CaseWidth,
-                                               self.DefectsSettings.Muted.CaseStep)
-
-                    for (fr, to) in idxs:
-
-                        # Вырезаем отдельный кейс и добавляем его в набор данных.
-                        case = ch.NNetData[fr:to]
-                        all_xs.append(case)
-                        all_ys.append(is_pos)
+                    all_xs = all_xs + ch.get_nnet_data_cases(self.DefectsSettings.Muted.CaseWidth,
+                                                             self.DefectsSettings.Muted.CaseStep)
+                    all_ys = all_ys + [is_pos] * len(all_xs)
 
         print('init_data_muted : collect : {0}'.format(time.time() - t0))
 
