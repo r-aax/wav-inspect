@@ -268,6 +268,26 @@ class DefectMutedSettings:
 # ==================================================================================================
 
 
+class DefectsSettings:
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 defect_snap_settings,
+                 defect_muted_settings):
+        """
+        Конструктор настроек для всех дефектов.
+
+        :param defect_snap_settings:  Настройки дефекта snap.
+        :param defect_muted_settings: Настройки дефекта muted.
+        """
+
+        self.DefectSnapSettings = defect_snap_settings
+        self.DefectMutedSettings = defect_muted_settings
+
+# ==================================================================================================
+
+
 class Channel:
     """
     Канал.
@@ -776,23 +796,17 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self):
+    def get_defects(self, st: DefectsSettings):
         """
         Определение дефектов.
+
+        :param st: Настройки.
 
         :return: Список дефектов.
         """
 
-        defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
-                                                  limits_after_sort=(0.25, 0.75),
-                                                  min_power_lo_threshold=5.0,
-                                                  half_snap_len=2,
-                                                  diff_min_max_powers_hi_threshold=5.0)
-
-        defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
-
-        return self.get_defects_snap(defect_snap_settings) + \
-               self.get_defects_muted(defect_muted_settings)
+        return self.get_defects_snap(st.DefectSnapSettings) + \
+               self.get_defects_muted(st.DefectMutedSettings)
 
 # ==================================================================================================
 
@@ -801,10 +815,16 @@ class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, name):
+    def __init__(self, st, name):
         """
         Конструктор нейронной сети.
+
+        :param st:   Настройки дефектов.
+        :param name: Имя дефекта (и соответствующей нейронки).
         """
+
+        # Настройки.
+        self.DefectsSettings = st
 
         # Имя сети.
         self.Name = name
@@ -861,8 +881,8 @@ class NNetTrainer:
                 is_pos = 0
 
             # Ограничители спектра.
-            min_val = -10.0
-            max_val = 10.0
+            min_val = self.DefectsSettings.DefectMutedSettings.LimitsDb[0]
+            max_val = self.DefectsSettings.DefectMutedSettings.LimitsDb[1]
 
             # Функция ограничения спектра по минимальному и максимальному значениям.
             def normalize_el(e):
@@ -1082,6 +1102,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
 
     return ds
 
+
 # ==================================================================================================
 
 
@@ -1094,15 +1115,18 @@ def unit_tests():
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
 
+
 # ==================================================================================================
 
 
-def nnet_test():
+def nnet_test(st: DefectsSettings):
     """
     Тест нейронки.
+
+    :param st: Настройки.
     """
 
-    nn = NNetTrainer('muted')
+    nn = NNetTrainer(st, 'muted')
     nn.init_data()
     nn.init_model()
     nn.fit()
@@ -1127,8 +1151,29 @@ def main():
 # ==================================================================================================
 
 
+def get_settings():
+    """
+    Получение настройки.
+
+    :return: Настройки.
+    """
+
+    defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
+                                              limits_after_sort=(0.25, 0.75),
+                                              min_power_lo_threshold=5.0,
+                                              half_snap_len=2,
+                                              diff_min_max_powers_hi_threshold=5.0)
+    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
+
+    return DefectsSettings(defect_snap_settings=defect_snap_settings,
+                           defect_muted_settings=defect_muted_settings)
+
+
+# ==================================================================================================
+
+
 if __name__ == '__main__':
-    nnet_test()
+    nnet_test(get_settings())
 
 
 # ==================================================================================================
