@@ -256,14 +256,24 @@ class DefectMutedSettings:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, limits_db):
+    def __init__(self,
+                 limits_db,
+                 case_width,
+                 case_step,
+                 train_cases_part):
         """
         Конструктор дефекта глухой записи.
 
-        :param limits_db: Лимиты по силе (за пределами лимитов вообще не учитываем сигнал).
+        :param limits_db:        Лимиты по силе (за пределами лимитов вообще не учитываем сигнал).
+        :param case_width:       Ширина кадра спектра для нейронки.
+        :param case_step:        Длина шага между соседними кейсами.
+        :param train_cases_part: Доля обучающей выборки.
         """
 
         self.LimitsDb = limits_db
+        self.CaseWidth = case_width
+        self.CaseStep = case_step
+        self.TrainCasesPart = train_cases_part
 
 # ==================================================================================================
 
@@ -901,7 +911,9 @@ class NNetTrainer:
                     # Получаем длину транспонированного спектра по оси, соответствующей времени
                     # и вычисляем индексы элементов данного массива при разбивке на кейсы.
                     alen = ch.TSpectre.shape[0]
-                    idxs = indices_slice_array(alen, 0, 16, 10)
+                    idxs = indices_slice_array(alen, 0,
+                                               self.DefectsSettings.Muted.CaseWidth,
+                                               self.DefectsSettings.Muted.CaseStep)
 
                     for (fr, to) in idxs:
 
@@ -925,7 +937,7 @@ class NNetTrainer:
         print('init_data_muted : shuffle : {0}'.format(time.time() - t0))
 
         # Позиция для разделения данных на обучающую и тестовую выборки.
-        p = int(len(all_xs) * 0.8)
+        p = int(len(all_xs) * self.DefectsSettings.Muted.TrainCasesPart)
         self.XTrain, self.XTest = split(all_xs, p)
         self.YTrain, self.YTest = split(all_ys, p)
 
@@ -962,6 +974,12 @@ class NNetTrainer:
         Иницализация модели.
         """
 
+        # Не собираем модель, если данные не готовы.
+        is_x_none = (self.XTrain is None) or (self.XTest is None)
+        is_y_none = (self.YTrain is None) or (self.YTest is None)
+        if is_x_none or is_y_none:
+            return
+
         if self.Name == 'muted':
             self.init_model_muted()
         elif self.Name == 'mnist':
@@ -978,7 +996,7 @@ class NNetTrainer:
 
         # Сборка модели.
         self.Model = Sequential()
-        self.Model.add(Dense(16, activation='relu', input_shape=(16 * 1025,)))
+        self.Model.add(Dense(16, activation='relu', input_shape=(self.XTrain.shape[1],)))
         self.Model.add(Dropout(0.2))
         self.Model.add(Dense(16, activation='relu'))
         self.Model.add(Dropout(0.2))
@@ -1083,7 +1101,10 @@ def get_settings():
                                               min_power_lo_threshold=5.0,
                                               half_snap_len=2,
                                               diff_min_max_powers_hi_threshold=5.0)
-    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0))
+    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0),
+                                                case_width=16,
+                                                case_step=10,
+                                                train_cases_part=0.8)
 
     return DefectsSettings(snap=defect_snap_settings,
                            muted=defect_muted_settings)
@@ -1172,7 +1193,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    nnet_test()
 
 
 # ==================================================================================================
