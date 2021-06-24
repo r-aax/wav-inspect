@@ -796,17 +796,17 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self, st: DefectsSettings):
+    def get_defects(self, s: DefectsSettings):
         """
         Определение дефектов.
 
-        :param st: Настройки.
+        :param s: Настройки.
 
         :return: Список дефектов.
         """
 
-        return self.get_defects_snap(st.DefectSnapSettings) + \
-               self.get_defects_muted(st.DefectMutedSettings)
+        return self.get_defects_snap(s.Snap) + \
+               self.get_defects_muted(s.Muted)
 
 # ==================================================================================================
 
@@ -1071,53 +1071,6 @@ class NNetTrainer:
 # ==================================================================================================
 
 
-def analyze_directory(directory, filter_fun=lambda _x: True,
-                      verbose=False):
-    """
-    Анализ директории с файлами на наличие дефектов.
-
-    :param directory:  Имя директории.
-    :param filter_fun: Дополнительная функция для отфильтровывания файлов, которые необходимо
-                       анализировать.
-    :param verbose:    Признак печати процесса анализа.
-
-    :return: Список дефектов.
-    """
-
-    fs = os.listdir(directory)
-    ds = []
-
-    for f in fs:
-        if filter_fun(f):
-
-            if verbose:
-                print('.... process {0}'.format(f))
-
-            wav = WAV('{0}/{1}'.format(directory, f))
-
-            if wav.is_ok():
-                wav.generate_spectres()
-                ds = ds + wav.get_defects()
-
-    return ds
-
-
-# ==================================================================================================
-
-
-def unit_tests():
-    """
-    Короткие тесты.
-    """
-
-    # indices_slice_array
-    assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
-    assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
-
-
-# ==================================================================================================
-
-
 def get_settings():
     """
     Получение настройки.
@@ -1134,6 +1087,55 @@ def get_settings():
 
     return DefectsSettings(snap=defect_snap_settings,
                            muted=defect_muted_settings)
+
+
+# ==================================================================================================
+
+
+def analyze_directory(directory, filter_fun=lambda _x: True,
+                      verbose=False):
+    """
+    Анализ директории с файлами на наличие дефектов.
+
+    :param directory:  Имя директории.
+    :param filter_fun: Дополнительная функция для отфильтровывания файлов, которые необходимо
+                       анализировать.
+    :param verbose:    Признак печати процесса анализа.
+
+    :return: Список дефектов.
+    """
+
+    s = get_settings()
+
+    fs = os.listdir(directory)
+    ds = []
+
+    for f in fs:
+        if filter_fun(f):
+
+            if verbose:
+                print('.... process {0}'.format(f))
+
+            wav = WAV('{0}/{1}'.format(directory, f))
+
+            if wav.is_ok():
+                wav.generate_spectres()
+                ds = ds + wav.get_defects(s)
+
+    return ds
+
+
+# ==================================================================================================
+
+
+def unit_tests():
+    """
+    Короткие тесты.
+    """
+
+    # indices_slice_array
+    assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
+    assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
 
 
 # ==================================================================================================
@@ -1170,7 +1172,7 @@ def main():
 
 
 if __name__ == '__main__':
-    nnet_test()
+    main()
 
 
 # ==================================================================================================
