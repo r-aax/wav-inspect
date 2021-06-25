@@ -148,6 +148,37 @@ def min_max_extended(a, limits_before_sort, limits_after_sort):
 # ==================================================================================================
 
 
+def predicated_count(a, p):
+    """
+    Получение количества элементов, удовлетворяющих предикату.
+
+    :param a: Список.
+    :param p: Предикат.
+
+    :return: Количество элементов, удовлетворяющих предикату.
+    """
+
+    return len([1 for e in a if p(e)])
+
+# ==================================================================================================
+
+
+def predicated_part(a, p):
+    """
+    Получение доли элементов, удовлетворяющих предикату.
+
+    :param a: Список.
+    :param p: Предикат.
+
+    :return: Доля элементов списка, удовлетворяющих предикату.
+    """
+
+    return predicated_count(a, p) / len(a)
+
+
+# ==================================================================================================
+
+
 def show_graph(data, figsize=(20, 8),
                style='r', linewidth=2.0,
                title='title', xlabel='', ylabel='',
@@ -698,18 +729,22 @@ class Channel:
 
         # Анализ каждого кейса.
         answers = nnet.predict(xs)
-        lo = 0.1
-        hi = 0.9
-        pc, nc = 0, 0
-        for answer in answers:
-            ps, ng = answer[0], answer[1]
-            if (ps > hi) and (ng < lo):
-                pc = pc + 1
-            if (ng > hi) and (ps < lo):
-                nc = nc + 1
-        print('all/pos/neg = ', len(answers), pc, nc)
 
-        return []
+        # Предикат определения глухого кейса.
+        def is_ans_muted(ans):
+            lim = s.CategoryDetectLimits
+            return (ans[0] < lim[0]) and (ans[1] > lim[1])
+
+        # Часть глухих кейсов.
+        muted_part = predicated_part(answers, is_ans_muted)
+
+        print('muted_part =', muted_part)
+
+        # Принимаем решение о глухой записи, если часть глухих кейсов высока.
+        if muted_part > s.PartForDecision:
+            return [Defect(self.FileName, self.Channel, 'muted', (0.0, self.Duration))]
+        else:
+            return []
 
 # ==================================================================================================
 
@@ -1214,7 +1249,7 @@ def get_settings():
                                                 case_learn_step=10,
                                                 train_cases_part=0.8,
                                                 case_pred_step=16,
-                                                category_detect_limits=(0.1, 0.9),
+                                                category_detect_limits=(0.45, 0.55),
                                                 part_for_decision=0.9)
 
     return DefectsSettings(snap=defect_snap_settings,
@@ -1268,9 +1303,29 @@ def unit_tests():
     Короткие тесты.
     """
 
+    # norm_01
+    assert norm_01(25.0, (50.0, 100.0)) == 0.0
+    assert norm_01(75.0, (10.0, 50.0)) == 1.0
+    assert abs(norm_01(50.0, (0.0, 100.0)) - 0.5) < 1.e-6
+
+    # zipwith
+    assert zipwith([1, 2, 3], [2, 3, 4], operator.add) == [3, 5, 7]
+    assert zipwith(['a', 'b'], ['1', '2'], lambda x, y: (x, y)) == list(zip(['a', 'b'], ['1', '2']))
+
+    # unzip
+    assert unzip([('a', 1), ('b', 2)]) == (['a', 'b'], [1, 2])
+
+    # min_max_extended
+    assert min_max_extended([6, 3, 8, 2, 6, 3, 9, 2, 9, 1],
+                            (0.15, 0.85), (0.25, 0.75)) == (2, 6)
+
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
+
+    # predicated_count
+    assert predicated_count([0, 0, 0, 1, 1, 1], lambda e: e > 0.5) == 3
+    assert predicated_count([1, 'a', 2, 'b', 3], lambda e: type(e) is str) == 2
 
 
 # ==================================================================================================
@@ -1308,6 +1363,7 @@ def main(filter_fun=lambda f: True):
 
 
 if __name__ == '__main__':
+    # unit_tests()
     # nnet_test()
     main(filter_fun=lambda _f: True)
 
