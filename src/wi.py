@@ -321,6 +321,10 @@ class DefectMutedSettings:
         self.CategoryDetectLimits = category_detect_limits
         self.PartForDecision = part_for_decision
 
+        # Грузим нейронку, если она есть.
+        if os.path.isfile('nnets/muted.h5'):
+            self.NNet = keras.models.load_model('nnets/muted.h5')
+
 # ==================================================================================================
 
 
@@ -691,18 +695,16 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, nnet):
+    def get_defects_muted(self):
         """
         Получение дефектов muted.
-
-        :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
 
         s = self.Parent.Settings.Muted
 
-        if nnet is None:
+        if s.NNet is None:
             return []
 
         xs = self.get_nnet_data_cases(s.CaseWidth, s.CasePredStep)
@@ -712,7 +714,7 @@ class Channel:
         xs = xs.astype('float32')
 
         # Анализ каждого кейса.
-        answers = nnet.predict(xs)
+        answers = s.NNet.predict(xs)
 
         # Предикат определения глухого кейса.
         def is_ans_muted(ans):
@@ -877,30 +879,26 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, nnet):
+    def get_defects_muted(self):
         """
         Получение маркеров дефекта muted.
-
-        :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
 
-        return self.ch0().get_defects_muted(nnet) + self.ch1().get_defects_muted(nnet)
+        return self.ch0().get_defects_muted() + self.ch1().get_defects_muted()
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self, nnets):
+    def get_defects(self):
         """
         Определение дефектов.
-
-        :param nnets: Семейство нейросетей.
 
         :return: Список дефектов.
         """
 
         return self.get_defects_snap() + \
-               self.get_defects_muted(nnets.Muted)
+               self.get_defects_muted()
 
 # ==================================================================================================
 
@@ -1174,33 +1172,6 @@ class NNetTrainer:
 # ==================================================================================================
 
 
-class NNetsFamily:
-
-    # ----------------------------------------------------------------------------------------------
-
-    def __init__(self):
-        """
-        Конструктор семейства нейросетей.
-        """
-
-        self.Muted = None
-
-        # Загружаем все что есть.
-        self.load()
-
-    # ----------------------------------------------------------------------------------------------
-
-    def load(self):
-        """
-        Загрузка имеющихся нейросетей.
-        """
-
-        if os.path.isfile('nnets/muted.h5'):
-            self.Muted = keras.models.load_model('nnets/muted.h5')
-
-# ==================================================================================================
-
-
 def get_settings():
     """
     Получение настроек.
@@ -1243,9 +1214,6 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
 
     s = get_settings()
 
-    # Подгрузка нейросетей.
-    nnets = NNetsFamily()
-
     fs = os.listdir(directory)
     ds = []
 
@@ -1258,7 +1226,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             wav = WAV('{0}/{1}'.format(directory, f), s)
 
             if wav.is_ok():
-                ds = ds + wav.get_defects(nnets)
+                ds = ds + wav.get_defects()
 
     return ds
 
