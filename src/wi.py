@@ -392,7 +392,7 @@ class Channel:
         self.TSpectre = self.Spectre.transpose()
 
         # Генерация данных для нейронки.
-        min_v, max_v = -50.0, 50.0
+        (min_v, max_v) = self.Parent.Settings.LimitsDb
         self.NNetData = self.TSpectre + 0.0
         np.clip(self.NNetData, min_v, max_v, out=self.NNetData)
         self.NNetData = (self.NNetData - min_v) / (max_v - min_v)
@@ -629,14 +629,14 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap_markers(self, s: DefectSnapSettings):
+    def get_defect_snap_markers(self):
         """
         Получение маркеров дефекта snap.
 
-        :param s: Настройки.
-
         :return: Список маркеров snap.
         """
+
+        s = self.Parent.Settings.Snap
 
         d = [min_max_extended(tsi,
                               limits_before_sort=s.LimitsBeforeSort,
@@ -658,29 +658,26 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_defect_snap_markers(self, s: DefectSnapSettings, figsize=(20, 8)):
+    def show_defect_snap_markers(self, figsize=(20, 8)):
         """
         Демонстрация маркеров дефекта snap.
 
-        :param s:       Настройки.
         :param figsize: Размер картинки.
         """
 
-        markers = self.get_defect_snap_markers(s)
+        markers = self.get_defect_snap_markers()
         show_graph(markers, figsize=figsize, title='Defect Snap Markers')
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self, s: DefectSnapSettings):
+    def get_defects_snap(self):
         """
         Получение дефектов snap.
-
-        :param s: Настройки.
 
         :return: Список дефектов snap.
         """
 
-        markers = self.get_defect_snap_markers(s)
+        markers = self.get_defect_snap_markers()
 
         # Формируем список дефектов.
         objs = [Defect(self.Parent.FileName,
@@ -694,15 +691,16 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, s: DefectMutedSettings, nnet):
+    def get_defects_muted(self, nnet):
         """
         Получение дефектов muted.
 
-        :param s:    Настройки.
         :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
+
+        s = self.Parent.Settings.Muted
 
         if nnet is None:
             return []
@@ -743,17 +741,18 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, filename=None):
+    def __init__(self, filename, settings):
         """
         Конструктор аудиозаписи.
 
         :param filename: Имя файла.
+        :param settings: Настройки.
         """
 
         # Имя файла.
         # (в данном месте инициализировать нельзя, так как задание имени записи не гарантирует
         # ее успешную загрузку, имя файла записывается в момент загрузки).
-        self.FileName = None
+        self.FileName = filename
 
         # Каналы.
         self.Channels = None
@@ -764,9 +763,11 @@ class WAV:
         # Продолжительность записи (с).
         self.Duration = None
 
-        # Если подано имя файла, то пытаемся загрузить его.
-        if filename is not None:
-            self.load(filename)
+        # Настройки.
+        self.Settings = settings
+
+        # Пытаемся загрузить файл.
+        self.load(filename)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -865,45 +866,41 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self, s: DefectSnapSettings):
+    def get_defects_snap(self):
         """
         Получение маркеров дефекта snap.
-
-        :param s: Настройки.
 
         :return: Список дефектов snap.
         """
 
-        return self.ch0().get_defects_snap(s) + self.ch1().get_defects_snap(s)
+        return self.ch0().get_defects_snap() + self.ch1().get_defects_snap()
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, s: DefectMutedSettings, nnet):
+    def get_defects_muted(self, nnet):
         """
         Получение маркеров дефекта muted.
 
-        :param s:    Настройки.
         :param nnet: Нейросеть.
 
         :return: Список дефектов muted.
         """
 
-        return self.ch0().get_defects_muted(s, nnet) + self.ch1().get_defects_muted(s, nnet)
+        return self.ch0().get_defects_muted(nnet) + self.ch1().get_defects_muted(nnet)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self, s: DefectsSettings, nnets):
+    def get_defects(self, nnets):
         """
         Определение дефектов.
 
-        :param s:     Настройки.
         :param nnets: Семейство нейросетей.
 
         :return: Список дефектов.
         """
 
-        return self.get_defects_snap(s.Snap) + \
-               self.get_defects_muted(s.Muted, nnets.Muted)
+        return self.get_defects_snap() + \
+               self.get_defects_muted(nnets.Muted)
 
 # ==================================================================================================
 
@@ -912,19 +909,19 @@ class NNetTrainer:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, s, name):
+    def __init__(self, name, settings):
         """
         Конструктор нейронной сети.
 
-        :param s:    Настройки дефектов.
-        :param name: Имя дефекта (и соответствующей нейронки).
+        :param name:     Имя дефекта (и соответствующей нейронки).
+        :param settings: Настройки.
         """
-
-        # Настройки.
-        self.DefectsSettings = s
 
         # Имя сети.
         self.Name = name
+
+        # Настройки.
+        self.Settings = settings
 
         # Обучающие и валидационные данные.
         self.XTrain = None
@@ -977,12 +974,12 @@ class NNetTrainer:
             else:
                 is_pos = 0
 
-            wav = WAV('{0}/{1}'.format(directory, file))
+            wav = WAV('{0}/{1}'.format(directory, file), self.Settings)
 
             if wav.is_ok():
                 for ch in wav.Channels:
-                    loc_xs = ch.get_nnet_data_cases(self.DefectsSettings.Muted.CaseWidth,
-                                                    self.DefectsSettings.Muted.CaseLearnStep)
+                    loc_xs = ch.get_nnet_data_cases(self.Settings.Muted.CaseWidth,
+                                                    self.Settings.Muted.CaseLearnStep)
                     loc_ys = [is_pos] * len(loc_xs)
                     all_xs = all_xs + loc_xs
                     all_ys = all_ys + loc_ys
@@ -1002,7 +999,7 @@ class NNetTrainer:
         print('init_data_muted : shuffle : {0}'.format(time.time() - t0))
 
         # Позиция для разделения данных на обучающую и тестовую выборки.
-        p = int(len(all_xs) * self.DefectsSettings.Muted.TrainCasesPart)
+        p = int(len(all_xs) * self.Settings.Muted.TrainCasesPart)
         self.XTrain, self.XTest = split(all_xs, p)
         self.YTrain, self.YTest = split(all_ys, p)
 
@@ -1258,10 +1255,10 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             if verbose:
                 print('.... process {0}'.format(f))
 
-            wav = WAV('{0}/{1}'.format(directory, f))
+            wav = WAV('{0}/{1}'.format(directory, f), s)
 
             if wav.is_ok():
-                ds = ds + wav.get_defects(s, nnets)
+                ds = ds + wav.get_defects(nnets)
 
     return ds
 
@@ -1302,7 +1299,7 @@ def nnet_test():
     Тест нейронки.
     """
 
-    nn = NNetTrainer(get_settings(), 'muted')
+    nn = NNetTrainer('muted', get_settings())
     nn.init_data()
     nn.init_model()
     nn.fit()
