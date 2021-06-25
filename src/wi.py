@@ -358,25 +358,21 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, filename, channel, y, sample_rate, duration):
+    def __init__(self, parent, channel, y):
         """
         Конструктор канала.
 
-        :param filename:    Имя записи.
-        :param channel:     Канал.
-        :param y:           Массив амплитуд.
-        :param sample_rate: Частота дисткретизации.
-        :param duration:    Продолжительность.
+        :param parent:  Родительская запись.
+        :param channel: Канал.
+        :param y:       Массив амплитуд.
         """
 
-        self.FileName = filename
+        self.Parent = parent
         self.Channel = channel
         self.Y = y
         self.Spectre = None
         self.TSpectre = None
         self.NNetData = None
-        self.SampleRate = sample_rate
-        self.Duration = duration
 
         # Безусловно генерируем спектры.
         self.generate_spectre()
@@ -412,7 +408,7 @@ class Channel:
         :return: Точка в спектре.
         """
 
-        return int(tx * (self.Spectre.shape[-1] / self.Duration))
+        return int(tx * (self.Spectre.shape[-1] / self.Parent.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -425,7 +421,7 @@ class Channel:
         :return: Точка времени.
         """
 
-        return specpos * (self.Duration / self.Spectre.shape[-1])
+        return specpos * (self.Parent.Duration / self.Spectre.shape[-1])
 
     # ----------------------------------------------------------------------------------------------
 
@@ -454,7 +450,7 @@ class Channel:
 
         # Создание картинки и отображение волны на ней.
         plt.figure(figsize=figsize)
-        librosa.display.waveplot(self.Y, sr=self.SampleRate)
+        librosa.display.waveplot(self.Y, sr=self.Parent.SampleRate)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -467,7 +463,7 @@ class Channel:
 
         # Создание картинки и отображение на ней.
         plt.figure(figsize=figsize)
-        librosa.display.specshow(self.Spectre, sr=self.SampleRate,
+        librosa.display.specshow(self.Spectre, sr=self.Parent.SampleRate,
                                  x_axis='time', y_axis='hz', cmap='turbo')
         plt.colorbar(format='%+02.0f dB')
 
@@ -484,7 +480,8 @@ class Channel:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Получение данных для отображения центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y,
+                                                               sr=self.Parent.SampleRate)[0]
 
         # Нормализация данных.
         def normalize(x, axis=0):
@@ -494,7 +491,7 @@ class Channel:
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        librosa.display.waveplot(self.Y, sr=self.Parent.SampleRate, alpha=0.4)
         plt.plot(t, normalize(spectral_centroids), color='b')
 
     # ----------------------------------------------------------------------------------------------
@@ -510,10 +507,12 @@ class Channel:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Получение данных массива спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y,
+                                                               sr=self.Parent.SampleRate)[0]
 
         # Получение данных массива спектрального спада.
-        spectral_rolloff = librosa.feature.spectral_rolloff(self.Y + 0.01, sr=self.SampleRate)[0]
+        spectral_rolloff = librosa.feature.spectral_rolloff(self.Y + 0.01,
+                                                            sr=self.Parent.SampleRate)[0]
 
         # Нормализация данных.
         def normalize(x, axis=0):
@@ -523,7 +522,7 @@ class Channel:
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        librosa.display.waveplot(self.Y, sr=self.Parent.SampleRate, alpha=0.4)
         plt.plot(t, normalize(spectral_rolloff), color='r')
 
     # ----------------------------------------------------------------------------------------------
@@ -539,12 +538,12 @@ class Channel:
         # https://nuancesprog-ru.turbopages.org/nuancesprog.ru/s/p/6713/
 
         # Вычисление данных спектрального центроида.
-        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.SampleRate)[0]
+        spectral_centroids = librosa.feature.spectral_centroid(self.Y, sr=self.Parent.SampleRate)[0]
 
         # Вычисление данных спектральной ширины.
-        sb_2 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate)[0]
-        sb_3 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate, p=3)[0]
-        sb_4 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.SampleRate, p=4)[0]
+        sb_2 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.Parent.SampleRate)[0]
+        sb_3 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.Parent.SampleRate, p=3)[0]
+        sb_4 = librosa.feature.spectral_bandwidth(self.Y + 0.01, sr=self.Parent.SampleRate, p=4)[0]
 
         # Нормализациия данных.
         def normalize(x, axis=0):
@@ -554,7 +553,7 @@ class Channel:
         plt.figure(figsize=figsize)
         frames = range(len(spectral_centroids))
         t = librosa.frames_to_time(frames)
-        librosa.display.waveplot(self.Y, sr=self.SampleRate, alpha=0.4)
+        librosa.display.waveplot(self.Y, sr=self.Parent.SampleRate, alpha=0.4)
         plt.plot(t, normalize(sb_2), color='r')
         plt.plot(t, normalize(sb_3), color='g')
         plt.plot(t, normalize(sb_4), color='y')
@@ -684,7 +683,10 @@ class Channel:
         markers = self.get_defect_snap_markers(s)
 
         # Формируем список дефектов.
-        objs = [Defect(self.FileName, self.Channel, 'snap', self.specpos_to_time(i))
+        objs = [Defect(self.Parent.FileName,
+                       self.Channel,
+                       'snap',
+                       self.specpos_to_time(i))
                 for (i, marker) in enumerate(markers)
                 if (marker == 1)]
 
@@ -724,7 +726,10 @@ class Channel:
 
         # Принимаем решение о глухой записи, если часть глухих кейсов высока.
         if muted_part > s.PartForDecision:
-            return [Defect(self.FileName, self.Channel, 'muted', (0.0, self.Duration))]
+            return [Defect(self.Parent.FileName,
+                           self.Channel,
+                           'muted',
+                           (0.0, self.Parent.Duration))]
         else:
             return []
 
@@ -806,8 +811,7 @@ class WAV:
 
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Channel(self.FileName, i, y, self.SampleRate, self.Duration)
-                             for (i, y) in enumerate(ys)]
+            self.Channels = [Channel(self, i, y) for (i, y) in enumerate(ys)]
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
