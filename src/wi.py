@@ -63,7 +63,7 @@ def zipwith(a, b, f):
     return [f(ai, bi) for (ai, bi) in zip(a, b)]
 
 
-# --------------------------------------------------------------------------------------------------
+# ==================================================================================================
 
 
 def unzip(a):
@@ -78,7 +78,7 @@ def unzip(a):
     return tuple([list(ai) for ai in zip(*a)])
 
 
-# --------------------------------------------------------------------------------------------------
+# ==================================================================================================
 
 
 def split(ar, pos):
@@ -94,7 +94,7 @@ def split(ar, pos):
     return ar[:pos], ar[pos:]
 
 
-# --------------------------------------------------------------------------------------------------
+# ==================================================================================================
 
 
 def indices_slice_array(ar_len, start, part_len, step):
@@ -118,7 +118,34 @@ def indices_slice_array(ar_len, start, part_len, step):
     return idx
 
 
-# --------------------------------------------------------------------------------------------------
+# ==================================================================================================
+
+
+def min_max_extended(a, limits_before_sort, limits_after_sort):
+    """
+    Получение минимального и максимального значения с применением ограничений.
+    Сначала массив обрезается по границам limits_before_sort.
+    После этого он сортируется.
+    После сортировки массив обрезается по границам limits_after_sort.
+    После этого возвращается первый и последний элемент массива.
+
+    :param a:                  Массив.
+    :param limits_before_sort: Границы, по которым обрубатся массив до сортировки.
+    :param limits_after_sort:  Границы, по которым обрубается массив после сортировки.
+
+    :return: Минимальное и максимальнео значения с учетом органичителей.
+    """
+
+    n = len(a)
+    x = a[int(n * limits_before_sort[0]): int(n * limits_before_sort[1])]
+    x.sort()
+    n = len(x)
+    x = x[int(n * limits_after_sort[0]): int(n * limits_after_sort[1])]
+
+    return x[0], x[-1]
+
+
+# ==================================================================================================
 
 
 def show_graph(data, figsize=(20, 8),
@@ -167,33 +194,6 @@ def show_graph(data, figsize=(20, 8),
             plt.plot(data[i], style[i], linewidth=linewidth[i])
 
     plt.show()
-
-
-# --------------------------------------------------------------------------------------------------
-
-
-def min_max_extended(a, limits_before_sort, limits_after_sort):
-    """
-    Получение минимального и максимального значения с применением ограничений.
-    Сначала массив обрезается по границам limits_before_sort.
-    После этого он сортируется.
-    После сортировки массив обрезается по границам limits_after_sort.
-    После этого возвращается первый и последний элемент массива.
-
-    :param a:                  Массив.
-    :param limits_before_sort: Границы, по которым обрубатся массив до сортировки.
-    :param limits_after_sort:  Границы, по которым обрубается массив после сортировки.
-
-    :return: Минимальное и максимальнео значения с учетом органичителей.
-    """
-
-    n = len(a)
-    x = a[int(n * limits_before_sort[0]): int(n * limits_before_sort[1])]
-    x.sort()
-    n = len(x)
-    x = x[int(n * limits_after_sort[0]): int(n * limits_after_sort[1])]
-
-    return x[0], x[-1]
 
 
 # ==================================================================================================
@@ -284,21 +284,34 @@ class DefectMutedSettings:
     def __init__(self,
                  limits_db,
                  case_width,
-                 case_step,
-                 train_cases_part):
+                 case_learn_step,
+                 train_cases_part,
+                 case_pred_step,
+                 category_detect_limits,
+                 part_for_decision):
         """
         Конструктор дефекта глухой записи.
 
-        :param limits_db:        Лимиты по силе (за пределами лимитов вообще не учитываем сигнал).
-        :param case_width:       Ширина кадра спектра для нейронки.
-        :param case_step:        Длина шага между соседними кейсами.
-        :param train_cases_part: Доля обучающей выборки.
+        :param limits_db:              Лимиты по силе (за пределами лимитов вообще
+                                       не учитываем сигнал).
+        :param case_width:             Ширина кадра спектра для обучения нейронки.
+        :param case_learn_step:        Длина шага между соседними кейсами для обучения нейронки.
+        :param train_cases_part:       Доля обучающей выборки.
+        :param case_pred_step:         Длина шага между соседними кейсами для предсказания.
+        :param category_detect_limits: Пределы на определение категории
+                                       (если сигнал выше верхнего порога, то категория детектировна,
+                                       если сигнал ниже нижнего порога, то категория не
+                                       детектирована, в других случаях решение не принято).
+        :param part_for_decision:      Доля детектированных кейсов для определения глухой записи.
         """
 
         self.LimitsDb = limits_db
         self.CaseWidth = case_width
-        self.CaseStep = case_step
+        self.CaseLearnStep = case_learn_step
         self.TrainCasesPart = train_cases_part
+        self.CasePredStep = case_pred_step
+        self.CategoryDetectLimits = category_detect_limits
+        self.PartForDecision = part_for_decision
 
 # ==================================================================================================
 
@@ -677,6 +690,25 @@ class Channel:
         if nnet is None:
             return []
 
+        xs = self.get_nnet_data_cases(s.CaseWidth, s.CasePredStep)
+        xs = np.array(xs)
+        shp = xs.shape
+        xs = xs.reshape((shp[0], shp[1] * shp[2]))
+        xs = xs.astype('float32')
+
+        # Анализ каждого кейса.
+        answers = nnet.predict(xs)
+        lo = 0.1
+        hi = 0.9
+        pc, nc = 0, 0
+        for answer in answers:
+            ps, ng = answer[0], answer[1]
+            if (ps > hi) and (ng < lo):
+                pc = pc + 1
+            if (ng > hi) and (ps < lo):
+                nc = nc + 1
+        print('all/pos/neg = ', len(answers), pc, nc)
+
         return []
 
 # ==================================================================================================
@@ -943,7 +975,7 @@ class NNetTrainer:
             if wav.is_ok():
                 for ch in wav.Channels:
                     loc_xs = ch.get_nnet_data_cases(self.DefectsSettings.Muted.CaseWidth,
-                                                    self.DefectsSettings.Muted.CaseStep)
+                                                    self.DefectsSettings.Muted.CaseLearnStep)
                     loc_ys = [is_pos] * len(loc_xs)
                     all_xs = all_xs + loc_xs
                     all_ys = all_ys + loc_ys
@@ -1179,8 +1211,11 @@ def get_settings():
                                               diff_min_max_powers_hi_threshold=5.0)
     defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0),
                                                 case_width=16,
-                                                case_step=10,
-                                                train_cases_part=0.8)
+                                                case_learn_step=10,
+                                                train_cases_part=0.8,
+                                                case_pred_step=16,
+                                                category_detect_limits=(0.1, 0.9),
+                                                part_for_decision=0.9)
 
     return DefectsSettings(snap=defect_snap_settings,
                            muted=defect_muted_settings)
@@ -1219,7 +1254,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             wav = WAV('{0}/{1}'.format(directory, f))
 
             if wav.is_ok():
-                wav.generate_spectres()
+                wav.generate_spectres(lambda e: norm_01(e, s.Muted.LimitsDb))
                 ds = ds + wav.get_defects(s, nnets)
 
     return ds
@@ -1274,7 +1309,7 @@ def main(filter_fun=lambda f: True):
 
 if __name__ == '__main__':
     # nnet_test()
-    main()
+    main(filter_fun=lambda _f: True)
 
 
 # ==================================================================================================
