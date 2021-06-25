@@ -369,6 +369,9 @@ class Channel:
         self.SampleRate = sample_rate
         self.Duration = duration
 
+        # Безусловно генерируем спектры.
+        self.generate_spectre()
+
     # ----------------------------------------------------------------------------------------------
 
     def generate_spectre(self):
@@ -376,6 +379,7 @@ class Channel:
         Генерация спектра.
         """
 
+        # Генерируем спектр.
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
 
         # Транспонируем матрицу звука, чтобы первым измерением была отметка времени.
@@ -848,16 +852,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectres(self):
-        """
-        Генерация спектров.
-        """
-
-        for ch in self.Channels:
-            ch.generate_spectre()
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defects_snap(self, s: DefectSnapSettings):
         """
         Получение маркеров дефекта snap.
@@ -971,7 +965,6 @@ class NNetTrainer:
                 is_pos = 0
 
             wav = WAV('{0}/{1}'.format(directory, file))
-            wav.generate_spectres()
 
             if wav.is_ok():
                 for ch in wav.Channels:
@@ -1255,7 +1248,6 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             wav = WAV('{0}/{1}'.format(directory, f))
 
             if wav.is_ok():
-                wav.generate_spectres()
                 ds = ds + wav.get_defects(s, nnets)
 
     return ds
