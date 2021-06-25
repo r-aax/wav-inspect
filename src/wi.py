@@ -249,6 +249,9 @@ class Defect:
 
 
 class DefectSnapSettings:
+    """
+    Настройки дефекта snap.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
@@ -284,11 +287,13 @@ class DefectSnapSettings:
 
 
 class DefectMutedSettings:
+    """
+    Настройки дефекта muted.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 limits_db,
                  case_width,
                  case_learn_step,
                  train_cases_part,
@@ -298,8 +303,6 @@ class DefectMutedSettings:
         """
         Конструктор дефекта глухой записи.
 
-        :param limits_db:              Лимиты по силе (за пределами лимитов вообще
-                                       не учитываем сигнал).
         :param case_width:             Ширина кадра спектра для обучения нейронки.
         :param case_learn_step:        Длина шага между соседними кейсами для обучения нейронки.
         :param train_cases_part:       Доля обучающей выборки.
@@ -311,7 +314,6 @@ class DefectMutedSettings:
         :param part_for_decision:      Доля детектированных кейсов для определения глухой записи.
         """
 
-        self.LimitsDb = limits_db
         self.CaseWidth = case_width
         self.CaseLearnStep = case_learn_step
         self.TrainCasesPart = train_cases_part
@@ -323,19 +325,26 @@ class DefectMutedSettings:
 
 
 class DefectsSettings:
+    """
+    Настройки дефектов.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 limits_db,
                  snap,
                  muted):
         """
         Конструктор настроек для всех дефектов.
 
-        :param snap:  Настройки дефекта snap.
-        :param muted: Настройки дефекта muted.
+        :param limits_db: Лимиты по силе (за пределами лимитов вообще
+                          не учитываем сигнал).
+        :param snap:      Настройки дефекта snap.
+        :param muted:     Настройки дефекта muted.
         """
 
+        self.LimitsDb = limits_db
         self.Snap = snap
         self.Muted = muted
 
@@ -1203,15 +1212,15 @@ def get_settings():
                                               min_power_lo_threshold=5.0,
                                               half_snap_len=2,
                                               diff_min_max_powers_hi_threshold=5.0)
-    defect_muted_settings = DefectMutedSettings(limits_db=(-50.0, 50.0),
-                                                case_width=16,
+    defect_muted_settings = DefectMutedSettings(case_width=16,
                                                 case_learn_step=10,
                                                 train_cases_part=0.8,
                                                 case_pred_step=16,
                                                 category_detect_limits=(0.45, 0.55),
                                                 part_for_decision=0.9)
 
-    return DefectsSettings(snap=defect_snap_settings,
+    return DefectsSettings(limits_db=(-50.0, 50.0),
+                           snap=defect_snap_settings,
                            muted=defect_muted_settings)
 
 
