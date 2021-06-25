@@ -1261,11 +1261,6 @@ def unit_tests():
     Короткие тесты.
     """
 
-    # norm_01
-    assert norm_01(25.0, (50.0, 100.0)) == 0.0
-    assert norm_01(75.0, (10.0, 50.0)) == 1.0
-    assert abs(norm_01(50.0, (0.0, 100.0)) - 0.5) < 1.e-6
-
     # zipwith
     assert zipwith([1, 2, 3], [2, 3, 4], operator.add) == [3, 5, 7]
     assert zipwith(['a', 'b'], ['1', '2'], lambda x, y: (x, y)) == list(zip(['a', 'b'], ['1', '2']))
