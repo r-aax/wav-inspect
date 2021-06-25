@@ -24,31 +24,6 @@ from keras.optimizers import RMSprop
 # ==================================================================================================
 
 
-def norm_01(v, b):
-    """
-    Нормирование значение с учетом нижней и верхней границы.
-    Значения, выходящие за пределы поданных границ, обрезаются.
-    Значения, попадающие в заданные границы, приводятся к отрезку [0.0; 1.0].
-
-    :param v: Значение.
-    :param b: Границы.
-
-    :return: Значение, приведенное к [0.0; 1.0].
-    """
-
-    b_min, b_max = b
-
-    if v < b_min:
-        return 0.0
-    elif v > b_max:
-        return 1.0
-    else:
-        return (v - b_min) / (b_max - b_min)
-
-
-# ==================================================================================================
-
-
 def zipwith(a, b, f):
     """
     Слияние двух списков с использованием произвольной функции.
@@ -396,12 +371,9 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectre(self, normalize_for_nnet_fun):
+    def generate_spectre(self):
         """
         Генерация спектра.
-
-        :param normalize_for_nnet_fun: Функция обработки элементов спектра
-                                       для подготовки к применению нейросетей.
         """
 
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
@@ -410,12 +382,11 @@ class Channel:
         # При этом удобнее работать с матрицей, если в нижних частях массива лежат низкие частоты.
         self.TSpectre = self.Spectre.transpose()
 
-        # Если задана функция
-        if normalize_for_nnet_fun is not None:
-            self.NNetData = self.TSpectre + 0.0
-            for i in range(self.NNetData.shape[0]):
-                for j in range(self.NNetData.shape[1]):
-                    self.NNetData[i][j] = normalize_for_nnet_fun(self.NNetData[i][j])
+        # Генерация данных для нейронки.
+        min_v, max_v = -50.0, 50.0
+        self.NNetData = self.TSpectre + 0.0
+        np.clip(self.NNetData, min_v, max_v, out=self.NNetData)
+        self.NNetData = (self.NNetData - min_v) / (max_v - min_v)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -738,8 +709,6 @@ class Channel:
         # Часть глухих кейсов.
         muted_part = predicated_part(answers, is_ans_muted)
 
-        print('muted_part =', muted_part)
-
         # Принимаем решение о глухой записи, если часть глухих кейсов высока.
         if muted_part > s.PartForDecision:
             return [Defect(self.FileName, self.Channel, 'muted', (0.0, self.Duration))]
@@ -879,16 +848,13 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectres(self, normalize_for_nnet_fun=None):
+    def generate_spectres(self):
         """
         Генерация спектров.
-
-        :param normalize_for_nnet_fun: Функция обработки элементов спектра
-                                       для подготовки к применению нейросетей.
         """
 
         for ch in self.Channels:
-            ch.generate_spectre(normalize_for_nnet_fun)
+            ch.generate_spectre()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1005,7 +971,7 @@ class NNetTrainer:
                 is_pos = 0
 
             wav = WAV('{0}/{1}'.format(directory, file))
-            wav.generate_spectres(lambda e: norm_01(e, self.DefectsSettings.Muted.LimitsDb))
+            wav.generate_spectres()
 
             if wav.is_ok():
                 for ch in wav.Channels:
@@ -1289,7 +1255,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             wav = WAV('{0}/{1}'.format(directory, f))
 
             if wav.is_ok():
-                wav.generate_spectres(lambda e: norm_01(e, s.Muted.LimitsDb))
+                wav.generate_spectres()
                 ds = ds + wav.get_defects(s, nnets)
 
     return ds
