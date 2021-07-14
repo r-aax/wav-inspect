@@ -4,6 +4,7 @@
 
 import os
 import time
+import itertools
 import pathlib
 import random
 import operator
@@ -733,6 +734,24 @@ class Channel:
         else:
             return []
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_by_name(self, defect_name):
+        """
+        Получение дефектов заданного типа.
+
+        :param defect_name: Имя дефекта.
+
+        :return: Список дефектов заданного типа.
+        """
+
+        if defect_name == 'snap':
+            return self.get_defects_snap()
+        elif defect_name == 'muted':
+            return self.get_defects_muted()
+        else:
+            raise Exception('unknown defect name ({0})'.format(defect_name))
+
 # ==================================================================================================
 
 
@@ -868,6 +887,22 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_from_both_channels(self, defect_name):
+        """
+        Получение списка дефектов для которого выполняется анализ обоих каналов.
+
+        :param defect_name: Имя дефекта.
+
+        :return: Список дефектов.
+        """
+
+        ch0dfs = self.ch0().get_defects_by_name(defect_name)
+        ch1dfs = self.ch1().get_defects_by_name(defect_name)
+
+        return ch0dfs + ch1dfs
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_snap(self):
         """
         Получение маркеров дефекта snap.
@@ -875,7 +910,7 @@ class WAV:
         :return: Список дефектов snap.
         """
 
-        return self.ch0().get_defects_snap() + self.ch1().get_defects_snap()
+        return self.get_defects_from_both_channels('snap')
 
     # ----------------------------------------------------------------------------------------------
 
@@ -886,19 +921,40 @@ class WAV:
         :return: Список дефектов muted.
         """
 
-        return self.ch0().get_defects_muted() + self.ch1().get_defects_muted()
+        return self.get_defects_from_both_channels('muted')
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self):
+    def get_defects_by_name(self, defect_name):
         """
-        Определение дефектов.
+        Получение списка дефектов по имени.
+
+        :param defect_name: Имя дефекта.
 
         :return: Список дефектов.
         """
 
-        return self.get_defects_snap() + \
-               self.get_defects_muted()
+        if defect_name == 'snap':
+            return self.get_defects_snap()
+        elif defect_name == 'muted':
+            return self.get_defects_muted()
+        else:
+            raise Exception('unknown defect name ({0})'.format(defect_name))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects(self, defects_names):
+        """
+        Получение списка дефектов по списку имен дефектов.
+
+        :param defects_names: Список имен дефектов.
+
+        :return: Список дефектов.
+        """
+
+        m = [self.get_defects_by_name(name) for name in defects_names]
+
+        return list(itertools.chain(*m))
 
 # ==================================================================================================
 
@@ -1199,15 +1255,18 @@ def get_settings():
 # ==================================================================================================
 
 
-def analyze_directory(directory, filter_fun=lambda _x: True,
+def analyze_directory(directory,
+                      filter_fun,
+                      defects_names,
                       verbose=False):
     """
     Анализ директории с файлами на наличие дефектов.
 
-    :param directory:  Имя директории.
-    :param filter_fun: Дополнительная функция для отфильтровывания файлов, которые необходимо
-                       анализировать.
-    :param verbose:    Признак печати процесса анализа.
+    :param directory:     Имя директории.
+    :param filter_fun:    Дополнительная функция для отфильтровывания файлов, которые необходимо
+                          анализировать.
+    :param defects_names: Список имен дефектов.
+    :param verbose:       Признак печати процесса анализа.
 
     :return: Список дефектов.
     """
@@ -1226,7 +1285,7 @@ def analyze_directory(directory, filter_fun=lambda _x: True,
             wav = WAV('{0}/{1}'.format(directory, f), s)
 
             if wav.is_ok():
-                ds = ds + wav.get_defects()
+                ds = ds + wav.get_defects(defects_names)
 
     return ds
 
@@ -1277,14 +1336,18 @@ def nnet_test():
 # ==================================================================================================
 
 
-def main(filter_fun=lambda f: True):
+def main(filter_fun, defects_names):
     """
     Головная функция.
 
-    :param filter_fun: Функция отбора файлов для детектирования дефектов.
+    :param filter_fun:    Функция отбора файлов для детектирования дефектов.
+    :param defects_names: Список имен дефектов.
     """
 
-    defects = analyze_directory('wavs/origin', filter_fun=filter_fun, verbose=True)
+    defects = analyze_directory('wavs/origin',
+                                filter_fun=filter_fun,
+                                defects_names=defects_names,
+                                verbose=True)
 
     for d in defects:
         print(d)
@@ -1296,7 +1359,7 @@ def main(filter_fun=lambda f: True):
 if __name__ == '__main__':
     # unit_tests()
     # nnet_test()
-    main(filter_fun=lambda _f: True)
+    main(filter_fun=lambda f: True, defects_names=['snap', 'muted'])
 
 
 # ==================================================================================================
