@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
+import pocketsphinx
 import keras
 import keras.utils
 import keras.utils.np_utils
@@ -150,6 +151,63 @@ def predicated_part(a, p):
     """
 
     return predicated_count(a, p) / len(a)
+
+
+# ==================================================================================================
+
+
+def recognize_speech_text_pocketsphinx(file, s=1):
+    """
+    Распознать текст в аудиофайле.
+
+    :param file: Имя файла.
+    :param s:    Вариант настроек.
+    """
+
+    # Если текст распознается с помощью speech_recognition, то
+    # файл записи нужно перекодировать, как показано по ссылке:
+    # https://github.com/Uberi/speech_recognition/issues/325
+
+    if s == 1:
+
+        # Настройки распознавания.
+        # https://habr.com/en/post/351376/
+        config = {
+            'verbose': True,
+            'audio_file': file,
+            'buffer_size': 2048,
+            'no_search': False,
+            'full_utt': False,
+            'hmm': '../pocketsphinx/download/zero_ru.cd_cont_4000',
+            'lm': '../pocketsphinx/download/ru.lm',
+            'dict': '../pocketsphinx/download/ru.dic',
+        }
+
+    elif s == 2:
+
+        # Другой вариант настроек распознавания.
+        # https://github.com/lavrenkov-sketch/speech-rechnition/blob/master/spech_to_text.py
+        config = {
+            'verbose': True,
+            'audio_file': file,
+            'buffer_size': 2048,
+            'no_search': False,
+            'full_utt': False,
+            'hmm': '../pocketsphinx/lavrenkov/zero_ru.cd_cont_4000',
+            'lm': False,
+            'jsgf': '../pocketsphinx/lavrenkov/calc2.jsgf',
+            'dict': '../pocketsphinx/lavrenkov/vocabular.dict',
+        }
+
+    else:
+        raise Exception('unknown settings №')
+
+    audio = pocketsphinx.AudioFile(**config)
+
+    for phrase in audio:
+        print(phrase)
+
+    print('recognize_speech_test finished')
 
 
 # ==================================================================================================
@@ -762,7 +820,7 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, filename, settings):
+    def __init__(self, filename, settings=None):
         """
         Конструктор аудиозаписи.
 
@@ -786,6 +844,8 @@ class WAV:
 
         # Настройки.
         self.Settings = settings
+        if self.Settings is None:
+            self.Settings = get_settings()
 
         # Пытаемся загрузить файл.
         self.load(filename)
