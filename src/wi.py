@@ -869,15 +869,16 @@ def analyze_directory(directory,
 # ==================================================================================================
 
 
-def main(filter_fun, defects_names):
+def run(directory, filter_fun, defects_names):
     """
     Головная функция.
 
+    :param directory:     Имя директории.
     :param filter_fun:    Функция отбора файлов для детектирования дефектов.
     :param defects_names: Список имен дефектов.
     """
 
-    defects = analyze_directory('wavs/origin',
+    defects = analyze_directory(directory,
                                 filter_fun=filter_fun,
                                 defects_names=defects_names,
                                 verbose=True)
@@ -890,7 +891,10 @@ def main(filter_fun, defects_names):
 
 
 if __name__ == '__main__':
-    main(filter_fun=lambda f: True, defects_names=['snap', 'muted'])
+
+    run(directory='wavs/origin',
+        filter_fun=lambda f: True,
+        defects_names=['snap', 'muted'])
 
 
 # ==================================================================================================
