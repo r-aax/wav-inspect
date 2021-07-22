@@ -107,8 +107,10 @@ class Channel:
         # При этом удобнее работать с матрицей, если в нижних частях массива лежат низкие частоты.
         self.TSpectre = self.Spectre.transpose()
 
-        # Генерация данных для нейронки.
+        # Генерация нормализованного спектра.
         (min_v, max_v) = self.Parent.Settings.LimitsDb
+        min_v = max(min_v, self.TSpectre.min())
+        max_v = min(max_v, self.TSpectre.max())
         self.NSpectre = self.TSpectre + 0.0
         np.clip(self.NSpectre, min_v, max_v, out=self.NSpectre)
         self.NSpectre = (self.NSpectre - min_v) / (max_v - min_v)
@@ -119,7 +121,7 @@ class Channel:
         """
         Перевод точки времени в точку в матрице спектра.
 
-        :param tx: Точка сремени.
+        :param tx: Точка времени.
 
         :return: Точка в спектре.
         """
