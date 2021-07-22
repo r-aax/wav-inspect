@@ -185,6 +185,25 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def show_nspectre(self, figsize=(20, 8)):
+        """
+        Демонстрация нормализованного спектра.
+
+        :param figsize: Размер картинки.
+        """
+
+        fig, ax = plt.subplots()
+
+        ax.pcolormesh(self.NSpectre.transpose(),
+                      cmap='Greys')
+
+        fig.set_figwidth(figsize[0])
+        fig.set_figheight(figsize[1])
+
+        plt.show()
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_spectral_centroid(self, figsize=(20, 8)):
         """
         Демонстрация графика спектрального центроида.
