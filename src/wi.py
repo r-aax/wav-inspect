@@ -80,9 +80,15 @@ class Channel:
         self.Parent = parent
         self.Channel = channel
         self.Y = y
+
+        # Исходный спектр, который строит librosa.
         self.Spectre = None
+
+        # Транспонированный спектр от librosa.
         self.TSpectre = None
-        self.NNetData = None
+
+        # Транспонированный спектр после нормализации.
+        self.NSpectre = None
 
         # Безусловно генерируем спектры.
         self.generate_spectre()
@@ -103,9 +109,9 @@ class Channel:
 
         # Генерация данных для нейронки.
         (min_v, max_v) = self.Parent.Settings.LimitsDb
-        self.NNetData = self.TSpectre + 0.0
-        np.clip(self.NNetData, min_v, max_v, out=self.NNetData)
-        self.NNetData = (self.NNetData - min_v) / (max_v - min_v)
+        self.NSpectre = self.TSpectre + 0.0
+        np.clip(self.NSpectre, min_v, max_v, out=self.NSpectre)
+        self.NSpectre = (self.NSpectre - min_v) / (max_v - min_v)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -145,9 +151,9 @@ class Channel:
         :return: Список кейсов для нейросети.
         """
 
-        idxs = wi_utils.indices_slice_array(self.NNetData.shape[0], 0, width, step)
+        idxs = wi_utils.indices_slice_array(self.NSpectre.shape[0], 0, width, step)
 
-        return [self.NNetData[fr:to] for (fr, to) in idxs]
+        return [self.NSpectre[fr:to] for (fr, to) in idxs]
 
     # ----------------------------------------------------------------------------------------------
 
