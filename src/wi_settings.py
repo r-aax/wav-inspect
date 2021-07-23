@@ -122,6 +122,31 @@ class DefectMutedSettings:
 # ==================================================================================================
 
 
+class DefectCometSettings:
+    """
+    Настройки дефекта comet.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 signal_threshold,
+                 orth_quartile_threshold):
+        """
+        Конструктор.
+
+        :param signal_threshold:        Порок максимального сигнала, необходимого для
+                                        поиска дефекта (с учетом нормирования).
+        :param orth_quartile_threshold: Порог ортоцентра с учетом квартиля сигнала для
+                                        принятия решения о дефекте.
+        """
+
+        self.SignalThreshold = signal_threshold
+        self.OrthQuartileThreshold = orth_quartile_threshold
+
+# ==================================================================================================
+
+
 class DefectsSettings:
     """
     Настройки дефектов.
@@ -133,7 +158,8 @@ class DefectsSettings:
                  limits_db,
                  snap,
                  snap2,
-                 muted):
+                 muted,
+                 comet):
         """
         Конструктор настроек для всех дефектов.
 
@@ -142,12 +168,14 @@ class DefectsSettings:
         :param snap:      Настройки дефекта snap.
         :param snap2:     Настройки дефекта snap2.
         :param muted:     Настройки дефекта muted.
+        :param comet:     Настройки дефекта comet.
         """
 
         self.LimitsDb = limits_db
         self.Snap = snap
         self.Snap2 = snap2
         self.Muted = muted
+        self.Comet = comet
 
 # ==================================================================================================
 
@@ -172,9 +200,13 @@ defect_muted_settings = DefectMutedSettings(case_width=16,
                                             category_detect_limits=(0.45, 0.55),
                                             part_for_decision=0.9)
 
+defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
+                                            orth_quartile_threshold=800)
+
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    snap=defect_snap_settings,
                                    snap2=defect_snap2_settings,
-                                   muted=defect_muted_settings)
+                                   muted=defect_muted_settings,
+                                   comet=defect_comet_settings)
 
 # ==================================================================================================
