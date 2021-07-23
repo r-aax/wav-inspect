@@ -556,7 +556,6 @@ class Channel:
         """
         Функция обнаружения эффекта глухой записи в аудиосигнале.
 
-        :param filename: полный путь к файлу + полное название файла с иследуемой аудиозаписью (тип - str)
         :param lim: уровень пустоты - определяет сколько верхних пустых слоев подряд должно быть,
             чтобы сказать, что аудиосигнал имеет участки глухой записи (тип - int, измеряется в фреймах)
         :param hop_length: размер окна кратковременного преобразования Фурье (тип - int, предпочтительно значениее равное степени 2)
@@ -676,8 +675,7 @@ class Channel:
         if len(frame) > 0:
             t2 = librosa.frames_to_time(frame, sr=self.Parent.SampleRate, hop_length=512)
             for td in t2:
-                # print(td)
-                # td = round(td, 3)
+
                 return [Defect(self.Parent.FileName,
                            self.Channel,
                            'muted2',
