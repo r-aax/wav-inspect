@@ -407,6 +407,25 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defect_comet_markers(self):
+        """
+        Получение маркеров дефекта comet.
+
+        :return: Список маркеров comet.
+        """
+
+        s = self.Parent.Settings.Comet
+
+        # Получаем маркеры.
+        orth = [wi_utils.array_orthocenter(c) for c in self.NSpectre]
+        lev = [max(c) for c in self.NSpectre]
+        qu = [wi_utils.array_weight_quartile(c) for c in self.NSpectre]
+
+        return [orth[i] * (lev[i] > s.SignalThreshold) * qu[i] > s.OrthQuartileThreshold
+                for i in range(len(orth))]
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_defect_snap_markers(self, figsize=(20, 8)):
         """
         Демонстрация маркеров дефекта snap.
@@ -498,6 +517,38 @@ class Channel:
                            (0.0, self.Parent.Duration))]
         else:
             return []
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_comet(self):
+        """
+        Получение дефектов comet.
+
+        :return: Список дефектов comet.
+        """
+
+        markers = self.get_defect_comet_markers()
+        markers[0] = 0
+        markers[-1] = 0
+
+        # Формируем список дефектов.
+        # objs = [Defect(self.Parent.FileName,
+        #                self.Channel,
+        #                'comet',
+        #                self.specpos_to_time(i))
+        #         for (i, marker) in enumerate(markers)
+        #        if (marker == 1)]
+
+        # return objs
+
+        for m in markers:
+            if m:
+                return [Defect(self.Parent.FileName,
+                               self.Channel,
+                               'comet',
+                               (0.0, self.Parent.Duration))]
+
+        return []
 
     # ----------------------------------------------------------------------------------------------
 
@@ -651,6 +702,8 @@ class Channel:
             return self.get_defects_snap2()
         elif defect_name == 'muted':
             return self.get_defects_muted()
+        elif defect_name == 'comet':
+            return self.get_defects_comet()
         elif defect_name == 'muted2':
             return self.get_defects_muted2()
         else:
@@ -930,6 +983,17 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_comet(self):
+        """
+        Получение маркеров дефекта comet.
+
+        :return: Список дефектов comet.
+        """
+
+        return self.get_defects_from_both_channels('comet')
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_by_name(self, defect_name):
         """
         Получение списка дефектов по имени.
@@ -947,6 +1011,8 @@ class WAV:
             return self.get_defects_muted()
         elif defect_name == 'muted2':
             return self.get_defects_muted2()
+        elif defect_name == 'comet':
+            return self.get_defects_comet()
         else:
             raise Exception('unknown defect name ({0})'.format(defect_name))
 
@@ -1147,6 +1213,7 @@ if __name__ == '__main__':
         defects_names=['snap', 'snap2', 'muted',
                        'muted2'
                        ])
+        # defects_names=['comet'])
 
 
 # ==================================================================================================

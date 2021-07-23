@@ -111,6 +111,41 @@ def min_max_extended(a, limits_before_sort, limits_after_sort):
 # ==================================================================================================
 
 
+def array_orthocenter(a):
+    """
+    Ортоцентр массива.
+
+    :param a: Массив.
+
+    :return: Ортоцентр.
+    """
+
+    ln = len(a)
+
+    return sum([a[i] * i for i in range(ln)]) / sum(a)
+
+
+# ==================================================================================================
+
+
+def array_weight_quartile(a):
+    """
+    Квартиль веса массива.
+
+    :param a: Массив.
+
+    :return: Квартиль веса массива.
+    """
+
+    ln = len(a)
+    ln4 = ln // 4
+    q = np.array([sum(a[:ln4]), sum(a[ln4:2*ln4]), sum(a[2*ln4:3*ln4]), sum(a[3*ln4:])])
+
+    return np.argmax(q)
+
+# ==================================================================================================
+
+
 def predicated_count(a, p):
     """
     Получение количества элементов, удовлетворяющих предикату.
@@ -138,6 +173,25 @@ def predicated_part(a, p):
 
     return predicated_count(a, p) / len(a)
 
+
+# ==================================================================================================
+
+
+def markers_true_intervals(a):
+    """
+    Получение интервалов из списка маркеров.
+    Первый и последний маркеры всегда 0 (False).
+
+    :param a: Список маркеров.
+
+    :return: Список интервалов.
+    """
+
+    ln = len(a)
+    i = 1
+    while i < ln:
+        if a[i] != a[i - 1]:
+            print(i)
 
 # ==================================================================================================
 
@@ -375,6 +429,9 @@ if __name__ == '__main__':
     # indices_slice_array
     assert indices_slice_array(3, 0, 2, 1) == [(0, 2), (1, 3)]
     assert indices_slice_array(10, 3, 3, 2) == [(3, 6), (5, 8), (7, 10)]
+
+    # array_orthocenter
+    assert array_orthocenter([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) == 3.0
 
     # predicated_count
     assert predicated_count([0, 0, 0, 1, 1, 1], lambda e: e > 0.5) == 3
