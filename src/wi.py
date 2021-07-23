@@ -400,7 +400,7 @@ class Channel:
         y = [min(vi) for vi in v]
         hi, lo = s.HiThreshold, s.LoThreshold
         markers = [(i > s.HalfSnapLen) and (i < len(v) - s.HalfSnapLen)
-                   and (y[i] > hi) and (y[i - 2] < lo) and (y[i + 2] < lo)
+                   and (y[i] > hi) and (y[i - s.HalfSnapLen] < lo) and (y[i + s.HalfSnapLen] < lo)
                    for i in range(len(v))]
 
         return markers
