@@ -528,27 +528,15 @@ class Channel:
         """
 
         markers = self.get_defect_comet_markers()
-        markers[0] = 0
-        markers[-1] = 0
+        ivs = wi_utils.markers_true_intervals(markers)
 
-        # Формируем список дефектов.
-        # objs = [Defect(self.Parent.FileName,
-        #                self.Channel,
-        #                'comet',
-        #                self.specpos_to_time(i))
-        #         for (i, marker) in enumerate(markers)
-        #        if (marker == 1)]
+        objs = [Defect(self.Parent.FileName,
+                       self.Channel,
+                       'comet',
+                       (self.specpos_to_time(iv[0]), self.specpos_to_time(iv[1])))
+                for iv in ivs]
 
-        # return objs
-
-        for m in markers:
-            if m:
-                return [Defect(self.Parent.FileName,
-                               self.Channel,
-                               'comet',
-                               (0.0, self.Parent.Duration))]
-
-        return []
+        return objs
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1207,7 +1195,7 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: True,
+        filter_fun=lambda f: f in ['0022.wav', '0023.wav', '0026.wav'],
         defects_names=['snap', 'snap2', 'muted'])
         # defects_names=['muted2', 'comet'])
 
