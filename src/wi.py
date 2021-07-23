@@ -1208,10 +1208,8 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['snap', 'snap2', 'muted',
-                       'muted2'
-                       ])
-        # defects_names=['comet'])
+        defects_names=['snap', 'snap2', 'muted'])
+        # defects_names=['muted2', 'comet'])
 
 
 # ==================================================================================================
