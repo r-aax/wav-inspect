@@ -31,7 +31,7 @@ class DefectSnapSettings:
                                                  силы звука после сортировки.
         :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
                                                  минимальной силы звука.
-        :param half_snap_len:                    Половинная длина склейки
+        :param half_snap_len:                    Половинная длина щелчка
                                                  (чем меньше она, тем более резкую скейку ловим).
         :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
                                                  максимума и минимума силы звука (определяет
@@ -43,6 +43,39 @@ class DefectSnapSettings:
         self.MinPowerLoThreshold = min_power_lo_threshold
         self.HalfSnapLen = half_snap_len
         self.DiffMinMaxPowersHiThreshold = diff_min_max_powers_hi_threshold
+
+# ==================================================================================================
+
+
+class DefectSnap2Settings:
+    """
+    Настройки дефекта snap2.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 freq_block_width,
+                 hi_threshold,
+                 lo_threshold,
+                 half_snap_len):
+        """
+        Конструктор.
+
+        :param freq_block_width: Ширина блока частот, по которым ищется максимум.
+        :param hi_threshold:     Верхняя граница нормализованнной силы сигнала
+                                 (после оператора выявления границ),
+                                 выше которой считается всплеск.
+        :param lo_threshold:     Нижняя граница нормализованной силы сигнала
+                                 (после оператора выявления границ),
+                                 ниже которой считается тишина.
+        :param half_snap_len:    Половина длины щелчка.
+        """
+
+        self.FreqBlockWidth = freq_block_width
+        self.HiThreshold = hi_threshold
+        self.LoThreshold = lo_threshold
+        self.HalfSnapLen = half_snap_len
 
 # ==================================================================================================
 
@@ -99,6 +132,7 @@ class DefectsSettings:
     def __init__(self,
                  limits_db,
                  snap,
+                 snap2,
                  muted):
         """
         Конструктор настроек для всех дефектов.
@@ -106,11 +140,13 @@ class DefectsSettings:
         :param limits_db: Лимиты по силе (за пределами лимитов вообще
                           не учитываем сигнал).
         :param snap:      Настройки дефекта snap.
+        :param snap2:     Настройки дефекта snap2.
         :param muted:     Настройки дефекта muted.
         """
 
         self.LimitsDb = limits_db
         self.Snap = snap
+        self.Snap2 = snap2
         self.Muted = muted
 
 # ==================================================================================================
@@ -124,6 +160,11 @@ defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
                                           half_snap_len=2,
                                           diff_min_max_powers_hi_threshold=5.0)
 
+defect_snap2_settings = DefectSnap2Settings(freq_block_width=16,
+                                            hi_threshold=0.5,
+                                            lo_threshold=0.01,
+                                            half_snap_len=2)
+
 defect_muted_settings = DefectMutedSettings(case_width=16,
                                             case_learn_step=10,
                                             train_cases_part=0.8,
@@ -133,6 +174,7 @@ defect_muted_settings = DefectMutedSettings(case_width=16,
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    snap=defect_snap_settings,
+                                   snap2=defect_snap2_settings,
                                    muted=defect_muted_settings)
 
 # ==================================================================================================

@@ -380,6 +380,33 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defect_snap2_markers(self):
+        """
+        Получение маркеров дефекта snap2.
+
+        :return: Список маркеров snap2.
+        """
+
+        s = self.Parent.Settings.Snap2
+
+        # Применяем фильтр Собеля для выявления границ.
+        ns2 = wi_utils.apply_filter_2d(self.NSpectre,
+                                       wi_utils.operator_sobel_gy())
+
+        # Получаем маркеры.
+        w = s.FreqBlockWidth
+        v = [(max(c[-w:]), max(c[-2 * w:-w]), max(c[-3 * w:-2 * w]), max(c[-4 * w:-3 * w]))
+             for c in ns2]
+        y = [min(vi) for vi in v]
+        hi, lo = s.HiThreshold, s.LoThreshold
+        markers = [(i > s.HalfSnapLen) and (i < len(v) - s.HalfSnapLen)
+                   and (y[i] > hi) and (y[i - 2] < lo) and (y[i + 2] < lo)
+                   for i in range(len(v))]
+
+        return markers
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_defect_snap_markers(self, figsize=(20, 8)):
         """
         Демонстрация маркеров дефекта snap.
@@ -405,6 +432,27 @@ class Channel:
         objs = [Defect(self.Parent.FileName,
                        self.Channel,
                        'snap',
+                       self.specpos_to_time(i))
+                for (i, marker) in enumerate(markers)
+                if (marker == 1)]
+
+        return objs
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_snap2(self):
+        """
+        Получение дефектов snap2.
+
+        :return: Список дефектов snap2.
+        """
+
+        markers = self.get_defect_snap2_markers()
+
+        # Формируем список дефектов.
+        objs = [Defect(self.Parent.FileName,
+                       self.Channel,
+                       'snap2',
                        self.specpos_to_time(i))
                 for (i, marker) in enumerate(markers)
                 if (marker == 1)]
@@ -464,6 +512,8 @@ class Channel:
 
         if defect_name == 'snap':
             return self.get_defects_snap()
+        elif defect_name == 'snap2':
+            return self.get_defects_snap2()
         elif defect_name == 'muted':
             return self.get_defects_muted()
         else:
@@ -631,6 +681,17 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_snap2(self):
+        """
+        Получение маркеров дефекта snap2.
+
+        :return: Список дефектов snap2.
+        """
+
+        return self.get_defects_from_both_channels('snap2')
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_muted(self):
         """
         Получение маркеров дефекта muted.
@@ -653,6 +714,8 @@ class WAV:
 
         if defect_name == 'snap':
             return self.get_defects_snap()
+        elif defect_name == 'snap2':
+            return self.get_defects_snap2()
         elif defect_name == 'muted':
             return self.get_defects_muted()
         else:
@@ -890,7 +953,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['snap', 'muted'])
+        defects_names=['snap', 'snap2', 'muted'])
 
 
 # ==================================================================================================
