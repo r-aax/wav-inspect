@@ -480,12 +480,12 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    """
+    Функционал с нейронками выключен.
     def get_defects_muted(self):
-        """
         Получение дефектов muted.
 
         :return: Список дефектов muted.
-        """
 
         s = self.Parent.Settings.Muted
 
@@ -517,6 +517,7 @@ class Channel:
                            (0.0, self.Parent.Duration))]
         else:
             return []
+    """
 
     # ----------------------------------------------------------------------------------------------
 
@@ -686,8 +687,8 @@ class Channel:
             return self.get_defects_snap()
         elif defect_name == 'snap2':
             return self.get_defects_snap2()
-        elif defect_name == 'muted':
-            return self.get_defects_muted()
+        # elif defect_name == 'muted':
+        #     return self.get_defects_muted()
         elif defect_name == 'comet':
             return self.get_defects_comet()
         elif defect_name == 'muted2':
@@ -958,14 +959,15 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    """
+    Функционал с нейронками выключен.
     def get_defects_muted(self):
-        """
         Получение маркеров дефекта muted.
 
         :return: Список дефектов muted.
-        """
 
         return self.get_defects_from_both_channels('muted')
+    """
 
     # ----------------------------------------------------------------------------------------------
 
@@ -993,8 +995,8 @@ class WAV:
             return self.get_defects_snap()
         elif defect_name == 'snap2':
             return self.get_defects_snap2()
-        elif defect_name == 'muted':
-            return self.get_defects_muted()
+        # elif defect_name == 'muted':
+        #     return self.get_defects_muted()
         elif defect_name == 'muted2':
             return self.get_defects_muted2()
         elif defect_name == 'comet':
@@ -1195,8 +1197,8 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: f in ['0022.wav', '0023.wav', '0026.wav'],
-        defects_names=['snap', 'snap2', 'muted'])
+        filter_fun=lambda f: True,
+        defects_names=['snap', 'snap2',])
         # defects_names=['muted2', 'comet'])
 
 
