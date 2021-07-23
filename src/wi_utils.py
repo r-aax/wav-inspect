@@ -180,18 +180,38 @@ def predicated_part(a, p):
 def markers_true_intervals(a):
     """
     Получение интервалов из списка маркеров.
-    Первый и последний маркеры всегда 0 (False).
 
     :param a: Список маркеров.
 
     :return: Список интервалов.
     """
 
-    ln = len(a)
-    i = 1
-    while i < ln:
-        if a[i] != a[i - 1]:
-            print(i)
+    intervals = []
+    begin = -1
+
+    for i in range(len(a)):
+
+        if a[i]:
+
+            # Если интервал не инициирован, то инициируем его.
+            # Если интервал инициирован, то игнорируем.
+            if begin == -1:
+                begin = i
+
+            # Нужно еще проверить на последнее значение.
+            if i == len(a) - 1:
+                intervals.append((begin, i))
+
+        else:
+
+            # Если интервал открыт, то закрываем его, добавляем в список
+            # и сбрасываем координату его начала.
+            if begin >= 0:
+                intervals.append((begin, i - 1))
+                begin = -1
+
+    return intervals
+
 
 # ==================================================================================================
 
@@ -436,6 +456,13 @@ if __name__ == '__main__':
     # predicated_count
     assert predicated_count([0, 0, 0, 1, 1, 1], lambda e: e > 0.5) == 3
     assert predicated_count([1, 'a', 2, 'b', 3], lambda e: type(e) is str) == 2
+
+    # markers_true_intervals
+    assert markers_true_intervals([]) == []
+    assert markers_true_intervals([1, 1, 1]) == [(0, 2)]
+    assert markers_true_intervals([0, 1, 1, 1, 0]) == [(1, 3)]
+    assert markers_true_intervals([1, 1, 0, 0, 1, 1]) == [(0, 1), (4, 5)]
+    assert markers_true_intervals([0, 0, 1, 1, 0, 0, 1, 0]) == [(2, 3), (6, 6)]
 
 
 # ==================================================================================================
