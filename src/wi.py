@@ -552,18 +552,21 @@ class Channel:
         # порог частот, ниже которых детектируем пустоту
         lim_db = int(Xdb.min()) + 1
 
-        # отбросить элементы, содержащие тишину
-        # поиск тишины
-        silence = self.get_silence(self.Y)
-        frame_silence = librosa.samples_to_frames(silence, hop_length=hop_length)
+        # # отбросить элементы, содержащие тишину
+        # # поиск тишины
+        # silence = self.get_silence(self.Y)
+        # frame_silence = librosa.samples_to_frames(silence, hop_length=hop_length)
+        #
+        # # обнулить фреймы с тишиной
+        # for fs in frame_silence:
+        #
+        #     # приравниваем диапозон фреймов к нулю
+        #     Xdb[-1][fs[0]: fs[-1]] = 0
 
         # обнулить фреймы с тишиной
-        for fs in frame_silence:
+        Xdb = self.get_silence2(x = self.Y)
 
-            # приравниваем диапозон фреймов к нулю
-            Xdb[-1][fs[0]: fs[-1]] = 0
-
-        # пустой массив для записи в него факта наличия пустот (1) или их отсутствие (0)
+        # пустой массив для записи в него факта наличия эффекта (1) или их отсутствие (0)
         void = []
 
         # контейнер для записи фреймов конца и начала события
@@ -776,6 +779,39 @@ class Channel:
                 t.pop(-1)
 
         return t
+
+# ----------------------------------------------------------------------------------------------
+
+    def get_silence2(self, x=self.Y, limx = 0.02, hop_length=512):
+
+        '''
+
+        :param x: аудиозапись
+        :param limx: предел амплитуды для однаружения тишины
+        :param hop_length: ширина одно фрейма
+        :return: матрица частот с обнуленными столбцами в местах нахождения тишины
+        '''
+
+        Xdb = self.NSpectre
+        tms = []
+        for wf in range(0, len(x) + 1, hop_length):
+
+            bm = x[wf:wf + hop_length] <= limx
+
+            # если это тишина, то
+            if all(bm):
+                tms.append(0)
+
+            # если это звук, то
+            else:
+                tms.append(1)
+
+        # обнуляем все тихие места
+        res = np.multiply(Xdb, tms)
+
+        # print(res)
+        return res
+
 
 # ==================================================================================================
 
