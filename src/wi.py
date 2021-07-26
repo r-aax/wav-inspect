@@ -3,6 +3,7 @@
 """
 
 import os
+import time
 import itertools
 import pathlib
 import sklearn
@@ -1140,6 +1141,9 @@ def analyze_directory(directory,
 
     fs = os.listdir(directory)
     ds = []
+    records_count = 0
+    records_time = 0.0
+    ts = time.time()
 
     for f in fs:
         if filter_fun(f):
@@ -1150,7 +1154,15 @@ def analyze_directory(directory,
             wav = WAV('{0}/{1}'.format(directory, f))
 
             if wav.is_ok():
+                records_count = records_count + 1
+                records_time = records_time + wav.Duration
                 ds = ds + wav.get_defects(defects_names)
+
+    print('Process finished:')
+    print('    {0} records processed'.format(records_count))
+    print('    {0} s of audio records processed'.format(records_time))
+    print('    {0} defects found'.format(len(ds)))
+    print('    {0} s time estimated'.format(time.time() - ts))
 
     return ds
 
