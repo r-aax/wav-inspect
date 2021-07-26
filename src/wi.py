@@ -480,44 +480,30 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    """
-    Функционал с нейронками выключен.
     def get_defects_muted(self):
+        """
         Получение дефектов muted.
 
         :return: Список дефектов muted.
+        """
 
         s = self.Parent.Settings.Muted
 
-        if s.NNet is None:
-            return []
+        ns = self.NSpectre
+        h = ns.shape[1]
+        weights = np.array([range(h)] * ns.shape[0])
+        ns2 = ns * weights
+        y = [sum(ns2[i]) / (sum(ns[i]) + 1e-10) for i in range(ns.shape[0])]
+        ind = sum(y) / len(y)
 
-        xs = self.get_nnet_data_cases(s.CaseWidth, s.CasePredStep)
-        xs = np.array(xs)
-        shp = xs.shape
-        xs = xs.reshape((shp[0], shp[1] * shp[2]))
-        xs = xs.astype('float32')
-
-        # Анализ каждого кейса.
-        answers = s.NNet.predict(xs)
-
-        # Предикат определения глухого кейса.
-        def is_ans_muted(ans):
-            lim = s.CategoryDetectLimits
-            return (ans[0] < lim[0]) and (ans[1] > lim[1])
-
-        # Часть глухих кейсов.
-        muted_part = wi_utils.predicated_part(answers, is_ans_muted)
-
-        # Принимаем решение о глухой записи, если часть глухих кейсов высока.
-        if muted_part > s.PartForDecision:
+        # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
+        if sum(y) / len(y) < s.OrthocenterThreshold:
             return [Defect(self.Parent.FileName,
                            self.Channel,
                            'muted',
                            (0.0, self.Parent.Duration))]
         else:
             return []
-    """
 
     # ----------------------------------------------------------------------------------------------
 
@@ -687,8 +673,8 @@ class Channel:
             return self.get_defects_snap()
         elif defect_name == 'snap2':
             return self.get_defects_snap2()
-        # elif defect_name == 'muted':
-        #     return self.get_defects_muted()
+        elif defect_name == 'muted':
+            return self.get_defects_muted()
         elif defect_name == 'comet':
             return self.get_defects_comet()
         elif defect_name == 'muted2':
@@ -959,15 +945,14 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    """
-    Функционал с нейронками выключен.
     def get_defects_muted(self):
+        """
         Получение маркеров дефекта muted.
 
         :return: Список дефектов muted.
+        """
 
         return self.get_defects_from_both_channels('muted')
-    """
 
     # ----------------------------------------------------------------------------------------------
 
@@ -995,8 +980,8 @@ class WAV:
             return self.get_defects_snap()
         elif defect_name == 'snap2':
             return self.get_defects_snap2()
-        # elif defect_name == 'muted':
-        #     return self.get_defects_muted()
+        elif defect_name == 'muted':
+            return self.get_defects_muted()
         elif defect_name == 'muted2':
             return self.get_defects_muted2()
         elif defect_name == 'comet':
@@ -1198,8 +1183,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['snap', 'snap2',])
-        # defects_names=['muted2', 'comet'])
+        defects_names=['snap', 'snap2', 'muted'])
 
 
 # ==================================================================================================

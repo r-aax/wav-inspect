@@ -289,6 +289,93 @@ class NNetTrainer:
 # ==================================================================================================
 
 
+"""
+Код для определения дефекта muted с помощью нейросети (не используется).
+
+Настройки.
+class DefectMutedSettings:
+    Настройки дефекта muted.
+
+    def __init__(self,
+                 case_width,
+                 case_learn_step,
+                 train_cases_part,
+                 case_pred_step,
+                 category_detect_limits,
+                 part_for_decision):
+        Конструктор дефекта глухой записи.
+
+        :param case_width:             Ширина кадра спектра для обучения нейронки.
+        :param case_learn_step:        Длина шага между соседними кейсами для обучения нейронки.
+        :param train_cases_part:       Доля обучающей выборки.
+        :param case_pred_step:         Длина шага между соседними кейсами для предсказания.
+        :param category_detect_limits: Пределы на определение категории
+                                       (если сигнал выше верхнего порога, то категория детектировна,
+                                       если сигнал ниже нижнего порога, то категория не
+                                       детектирована, в других случаях решение не принято).
+        :param part_for_decision:      Доля детектированных кейсов для определения глухой записи.
+
+        self.CaseWidth = case_width
+        self.CaseLearnStep = case_learn_step
+        self.TrainCasesPart = train_cases_part
+        self.CasePredStep = case_pred_step
+        self.CategoryDetectLimits = category_detect_limits
+        self.PartForDecision = part_for_decision
+
+        # Грузим нейронку, если она есть.
+        if os.path.isfile('nnets/muted.h5'):
+            self.NNet = keras.models.load_model('nnets/muted.h5')
+
+Инициализация настроек.
+defect_muted_settings = DefectMutedSettings(case_width=16,
+                                            case_learn_step=10,
+                                            train_cases_part=0.8,
+                                            case_pred_step=16,
+                                            category_detect_limits=(0.45, 0.55),
+                                            part_for_decision=0.9)
+    
+Метод класса Channel.
+def get_defects_muted(self):
+    Получение дефектов muted.
+
+    :return: Список дефектов muted.
+
+    s = self.Parent.Settings.Muted
+
+    if s.NNet is None:
+        return []
+
+    xs = self.get_nnet_data_cases(s.CaseWidth, s.CasePredStep)
+    xs = np.array(xs)
+    shp = xs.shape
+    xs = xs.reshape((shp[0], shp[1] * shp[2]))
+    xs = xs.astype('float32')
+
+    # Анализ каждого кейса.
+    answers = s.NNet.predict(xs)
+
+    # Предикат определения глухого кейса.
+    def is_ans_muted(ans):
+        lim = s.CategoryDetectLimits
+        return (ans[0] < lim[0]) and (ans[1] > lim[1])
+
+    # Часть глухих кейсов.
+    muted_part = wi_utils.predicated_part(answers, is_ans_muted)
+
+    # Принимаем решение о глухой записи, если часть глухих кейсов высока.
+    if muted_part > s.PartForDecision:
+        return [Defect(self.Parent.FileName,
+                       self.Channel,
+                       'muted',
+                       (0.0, self.Parent.Duration))]
+    else:
+        return []
+"""
+
+
+# ==================================================================================================
+
+
 if __name__ == '__main__':
 
     nnet_name = 'muted'

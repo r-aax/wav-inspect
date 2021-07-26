@@ -2,9 +2,6 @@
 Определение настроек для работы с дефектами.
 """
 
-# import os
-# import keras
-
 
 # ==================================================================================================
 
@@ -80,43 +77,22 @@ class DefectSnap2Settings:
 # ==================================================================================================
 
 
-"""
-Функционал с нейронками выключен.
 class DefectMutedSettings:
+    """
     Настройки дефекта muted.
+    """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 case_width,
-                 case_learn_step,
-                 train_cases_part,
-                 case_pred_step,
-                 category_detect_limits,
-                 part_for_decision):
-        Конструктор дефекта глухой записи.
+                 orthocenter_threshold):
+        """
+        Конструктор.
 
-        :param case_width:             Ширина кадра спектра для обучения нейронки.
-        :param case_learn_step:        Длина шага между соседними кейсами для обучения нейронки.
-        :param train_cases_part:       Доля обучающей выборки.
-        :param case_pred_step:         Длина шага между соседними кейсами для предсказания.
-        :param category_detect_limits: Пределы на определение категории
-                                       (если сигнал выше верхнего порога, то категория детектировна,
-                                       если сигнал ниже нижнего порога, то категория не
-                                       детектирована, в других случаях решение не принято).
-        :param part_for_decision:      Доля детектированных кейсов для определения глухой записи.
+        :param orthocenter_threshold: Порог среднего значения ортоцентра записи.
+        """
 
-        self.CaseWidth = case_width
-        self.CaseLearnStep = case_learn_step
-        self.TrainCasesPart = train_cases_part
-        self.CasePredStep = case_pred_step
-        self.CategoryDetectLimits = category_detect_limits
-        self.PartForDecision = part_for_decision
-
-        # Грузим нейронку, если она есть.
-        if os.path.isfile('nnets/muted.h5'):
-            self.NNet = keras.models.load_model('nnets/muted.h5')
-"""
+        self.OrthocenterThreshold = orthocenter_threshold
 
 # ==================================================================================================
 
@@ -157,7 +133,7 @@ class DefectsSettings:
                  limits_db,
                  snap,
                  snap2,
-                 # muted,
+                 muted,
                  comet):
         """
         Конструктор настроек для всех дефектов.
@@ -173,7 +149,7 @@ class DefectsSettings:
         self.LimitsDb = limits_db
         self.Snap = snap
         self.Snap2 = snap2
-        # self.Muted = muted
+        self.Muted = muted
         self.Comet = comet
 
 # ==================================================================================================
@@ -192,14 +168,7 @@ defect_snap2_settings = DefectSnap2Settings(freq_block_width=16,
                                             lo_threshold=0.01,
                                             half_snap_len=2)
 
-"""
-defect_muted_settings = DefectMutedSettings(case_width=16,
-                                            case_learn_step=10,
-                                            train_cases_part=0.8,
-                                            case_pred_step=16,
-                                            category_detect_limits=(0.45, 0.55),
-                                            part_for_decision=0.9)
-"""
+defect_muted_settings = DefectMutedSettings(orthocenter_threshold=75)
 
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
@@ -207,7 +176,7 @@ defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    snap=defect_snap_settings,
                                    snap2=defect_snap2_settings,
-                                   # muted=defect_muted_settings,
+                                   muted=defect_muted_settings,
                                    comet=defect_comet_settings)
 
 # ==================================================================================================
