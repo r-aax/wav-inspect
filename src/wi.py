@@ -88,8 +88,8 @@ class Channel:
         # Транспонированный спектр от librosa.
         self.TSpectre = None
 
-        # Транспонированный спектр после нормализации.
-        self.NSpectre = None
+        # Матрица нормализованного спектра, которая является массивом вертикальных линий.
+        self.NV = None
 
         # Безусловно генерируем спектры.
         self.generate_spectre()
@@ -112,9 +112,9 @@ class Channel:
         (min_v, max_v) = self.Parent.Settings.LimitsDb
         min_v = max(min_v, self.TSpectre.min())
         max_v = min(max_v, self.TSpectre.max())
-        self.NSpectre = self.TSpectre + 0.0
-        np.clip(self.NSpectre, min_v, max_v, out=self.NSpectre)
-        self.NSpectre = (self.NSpectre - min_v) / (max_v - min_v)
+        self.V = self.TSpectre + 0.0
+        np.clip(self.V, min_v, max_v, out=self.V)
+        self.V = (self.V - min_v) / (max_v - min_v)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -154,9 +154,9 @@ class Channel:
         :return: Список кейсов для нейросети.
         """
 
-        idxs = wi_utils.indices_slice_array(self.NSpectre.shape[0], 0, width, step)
+        idxs = wi_utils.indices_slice_array(self.V.shape[0], 0, width, step)
 
-        return [self.NSpectre[fr:to] for (fr, to) in idxs]
+        return [self.V[fr:to] for (fr, to) in idxs]
 
     # ----------------------------------------------------------------------------------------------
 
@@ -391,7 +391,7 @@ class Channel:
         s = self.Parent.Settings.Snap2
 
         # Применяем фильтр Собеля для выявления границ.
-        ns2 = wi_utils.apply_filter_2d(self.NSpectre,
+        ns2 = wi_utils.apply_filter_2d(self.V,
                                        wi_utils.operator_sobel_gy())
 
         # Получаем маркеры.
@@ -418,9 +418,9 @@ class Channel:
         s = self.Parent.Settings.Comet
 
         # Получаем маркеры.
-        orth = [wi_utils.array_orthocenter(c) for c in self.NSpectre]
-        lev = [max(c) for c in self.NSpectre]
-        qu = [wi_utils.array_weight_quartile(c) for c in self.NSpectre]
+        orth = [wi_utils.array_orthocenter(c) for c in self.V]
+        lev = [max(c) for c in self.V]
+        qu = [wi_utils.array_weight_quartile(c) for c in self.V]
 
         return [orth[i] * (lev[i] > s.SignalThreshold) * qu[i] > s.OrthQuartileThreshold
                 for i in range(len(orth))]
@@ -490,7 +490,7 @@ class Channel:
 
         s = self.Parent.Settings.Muted
 
-        ns = self.NSpectre
+        ns = self.V
         h = ns.shape[1]
         weights = np.array([range(h)] * ns.shape[0])
         ns2 = ns * weights
@@ -792,7 +792,7 @@ class Channel:
         :return: матрица частот с обнуленными столбцами в местах нахождения тишины
         '''
 
-        Xdb = self.NSpectre
+        Xdb = self.V
         tms = []
         for wf in range(0, len(x) + 1, hop_length):
 
