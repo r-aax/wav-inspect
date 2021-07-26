@@ -4,7 +4,7 @@
 
 import matplotlib.pyplot as plt
 import operator
-import pocketsphinx
+# import pocketsphinx
 import numpy as np
 import cv2
 

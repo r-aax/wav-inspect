@@ -528,7 +528,9 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted2(self, lim_down=6, lim_db=-37, hop_length=512):
+    def get_defects_muted2(self, lim_down = 700,
+                           # lim_db = -35,
+                           hop_length=512):
         """
         Функция обнаружения эффекта глухой записи в аудиосигнале.
 
@@ -546,6 +548,9 @@ class Channel:
         X = librosa.stft(self.Y, hop_length=hop_length) # вместо х - self.Y
         Xmag = abs(X)
         Xdb = librosa.amplitude_to_db(Xmag)
+
+        # порог частот, ниже которых детектируем пустоту
+        lim_db = int(Xdb.min()) + 1
 
         # отбросить элементы, содержащие тишину
         # поиск тишины
@@ -650,12 +655,11 @@ class Channel:
         # вывод резудьтата
         if len(frame) > 0:
             t2 = librosa.frames_to_time(frame, sr=self.Parent.SampleRate, hop_length=512)
-            for td in t2:
 
-                return [Defect(self.Parent.FileName,
+            return [Defect(self.Parent.FileName,
                            self.Channel,
                            'muted2',
-                           (td[0], td[-1]))]
+                           (td[0], td[-1])) for td in t2]
         else:
             return []
 
