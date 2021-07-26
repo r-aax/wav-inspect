@@ -89,7 +89,7 @@ class Channel:
         self.TSpectre = None
 
         # Матрица нормализованного спектра, которая является массивом вертикальных линий.
-        self.NV = None
+        self.V = None
 
         # Безусловно генерируем спектры.
         self.generate_spectre()
