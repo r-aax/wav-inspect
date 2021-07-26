@@ -782,7 +782,7 @@ class Channel:
 
 # ----------------------------------------------------------------------------------------------
 
-    def get_silence2(self, x=self.Y, limx = 0.02, hop_length=512):
+    def get_silence2(self, x, limx = 0.02, hop_length=512):
 
         '''
 
