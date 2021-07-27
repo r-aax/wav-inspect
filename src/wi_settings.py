@@ -96,6 +96,38 @@ class DefectMutedSettings:
 
 # ==================================================================================================
 
+class DefectMuted2Settings:
+    """
+    Настройки дефекта muted2.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 percentage_of_lim_db,
+                 percent_not_void,
+                 percentage_of_error,
+                 lim_percent_frame,
+                 muted2_silence
+                 ):
+
+        """
+        Конструктор.
+
+        :param percentage_of_lim_db: порог обнаружения отсутствия частот.
+        :param percent_not_void: процент фрейма, который не исследуется.
+        :param percentage_of_error: процент погрешности для детектирования глухого фрейма.
+        :param lim_percent_frame: процент порога наличия глухих фреймов.
+        :param hop_length: ширина окна преобразования Фурье.
+        """
+        self.PercentageOfLimDb = percentage_of_lim_db
+        self.PercentNotVoid = percent_not_void
+        self.PercentageOfError = percentage_of_error
+        self.LimPercentFrame = lim_percent_frame
+        self.Muted2Silence = muted2_silence
+
+# ==================================================================================================
+
 
 class DefectCometSettings:
     """
@@ -134,6 +166,7 @@ class DefectsSettings:
                  snap,
                  snap2,
                  muted,
+                 muted2,
                  comet):
         """
         Конструктор настроек для всех дефектов.
@@ -143,6 +176,7 @@ class DefectsSettings:
         :param snap:      Настройки дефекта snap.
         :param snap2:     Настройки дефекта snap2.
         :param muted:     Настройки дефекта muted.
+        :param muted2:     Настройки дефекта muted2.
         :param comet:     Настройки дефекта comet.
         """
 
@@ -150,6 +184,7 @@ class DefectsSettings:
         self.Snap = snap
         self.Snap2 = snap2
         self.Muted = muted
+        self.Muted2 = muted2
         self.Comet = comet
 
 # ==================================================================================================
@@ -170,6 +205,13 @@ defect_snap2_settings = DefectSnap2Settings(freq_block_width=16,
 
 defect_muted_settings = DefectMutedSettings(orthocenter_threshold=75)
 
+defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db = 10,
+                                            percent_not_void = 10,
+                                            percentage_of_error = 10,
+                                            lim_percent_frame = 65,
+                                            muted2_silence=0.005
+                                              )
+
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
@@ -177,6 +219,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    snap=defect_snap_settings,
                                    snap2=defect_snap2_settings,
                                    muted=defect_muted_settings,
+                                   muted2=defect_muted2_settings,
                                    comet=defect_comet_settings)
 
 # ==================================================================================================

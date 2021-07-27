@@ -528,41 +528,34 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted2(self, percentage_of_lim_db = 10,
-                       percent_not_void = 10,
-                       percentage_of_error = 10,
-                       lim_percent_frame = 65,
-                       hop_length=512):
+    def get_defects_muted2(self):
 
         '''
-        :param percentage_of_lim_db: порог обнаружения отсутствия частот
-        :param percent_not_void: процент фрейма, который не исследуется
-        :param percentage_of_error: процент погрешности для детектирования глухого фрейма
-        :param lim_percent_frame: процент порога наличия глухих фреймов
-        :param hop_length: ширина окна преобразования Фурье
+        Получение дефектов muted2.
 
         :return: Список дефектов muted2.
         '''
 
+        s = self.Parent.Settings.Muted2
 
         # кратковременное преобразование Фурье
         Xdb = self.Spectre
 
         # порог db, ниже которых детектируем пустоту
-        lim_db = int((int(Xdb.max()) - int(Xdb.min())) / 100 * percentage_of_lim_db) + int(Xdb.min())
+        lim_db = int((int(Xdb.max()) - int(Xdb.min())) / 100 * s.PercentageOfLimDb) + int(Xdb.min())
 
         # обнулить фреймы с тишиной
-        Xdb = self.get_silence2(x = self.Y, limx = 0.005, Xdb = Xdb)
+        Xdb = self.get_silence2(x = self.Y, limx = s.Muted2Silence, Xdb = Xdb)
 
         # нашли пустоты во всей матрице - все что ниже пороговой амплитуды
         Xdb = Xdb <= lim_db
 
         # отсекаем нижню часть спектрограммы
-        val_void_in_song = int(Xdb.shape[0] / 100 * percent_not_void)
+        val_void_in_song = int(Xdb.shape[0] / 100 * s.PercentNotVoid)
         Xdb = Xdb[val_void_in_song:]
 
         # процент погрешности
-        val_of_error = int(Xdb.shape[0] / 100 * percentage_of_error)
+        val_of_error = int(Xdb.shape[0] / 100 * s.PercentageOfError)
 
         # отсортировать и срезать погрешность
         Xdb.sort(axis=0)  # сортировка по столбцам
@@ -575,12 +568,11 @@ class Channel:
                 void_frame.append(nf)
 
         # высчитываем процент глухих фреймов
-        lim_frame = int(lim_percent_frame * Xdb.T.shape[0] / 100)
+        lim_frame = int(s.LimPercentFrame * Xdb.T.shape[0] / 100)
 
         # вывод резудьтата
         # если глухих фреймов больше лимита, то запись глухая
         if len(void_frame) >= lim_frame:
-            time = librosa.get_duration(self.Y, sr=self.Parent.SampleRate, hop_length=hop_length)
             return [Defect(self.Parent.FileName,
                            self.Channel,
                            'muted2',
