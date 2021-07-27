@@ -531,7 +531,7 @@ class Channel:
     def get_defects_muted2(self, percentage_of_lim_db = 10,
                        percent_not_void = 10,
                        percentage_of_error = 10,
-                       lim_percent_frame = 75,
+                       lim_percent_frame = 65,
                        hop_length=512):
 
         '''
