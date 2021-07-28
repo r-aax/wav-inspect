@@ -19,42 +19,21 @@ import wi_settings
 # ==================================================================================================
 
 
-class Defect:
+def defect_descr(rec, ch, name, beg, end):
     """
-    Дефект.
+    Конструирование описания дефекта.
+
+    :param rec:  Имя записи.
+    :param ch:   Номер канала.
+    :param name: Имя дефекта.
+    :param beg:  Начало дефекта.
+    :param end:  Конец дефекта.
+
+    :return: Описание дефекта.
     """
 
-    # ----------------------------------------------------------------------------------------------
+    return {"rec": rec, "ch": ch, "name": name, "beg": beg, "end": end}
 
-    def __init__(self, record_name, channel, defect_name, defect_coords):
-        """
-        Конструктор дефекта.
-
-        :param record_name:   Имя записи.
-        :param channel:       Номер канала.
-        :param defect_name:   Имя дефекта.
-        :param defect_coords: Координаты дефекта.
-        """
-
-        self.RecordName = record_name
-        self.Channel = channel
-        self.DefectName = defect_name
-        self.DefectCoords = defect_coords
-
-    # ----------------------------------------------------------------------------------------------
-
-    def __repr__(self):
-        """
-        Получение строкового представления дефекта.
-
-        :return: Строка.
-        """
-
-        return 'Defect: {0} (ch {1}) : {2} ({3:.3f} s - {4:.3f} s)'.format(self.RecordName,
-                                                                           self.Channel,
-                                                                           self.DefectName,
-                                                                           self.DefectCoords[0],
-                                                                           self.DefectCoords[1])
 
 # ==================================================================================================
 
@@ -450,10 +429,11 @@ class Channel:
         # Формируем список дефектов.
         for i, marker in enumerate(markers):
             if marker:
-                defects.append(Defect(self.Parent.FileName,
-                                      self.Channel,
-                                      'snap',
-                                      (self.specpos_to_time(i), self.specpos_to_time(i))))
+                defects.append(defect_descr(self.Parent.FileName,
+                                            self.Channel,
+                                            'snap',
+                                            self.specpos_to_time(i),
+                                            self.specpos_to_time(i)))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -469,10 +449,11 @@ class Channel:
         # Формируем список дефектов.
         for i, marker in enumerate(markers):
             if marker:
-                defects.append(Defect(self.Parent.FileName,
-                                      self.Channel,
-                                      'snap2',
-                                      (self.specpos_to_time(i), self.specpos_to_time(i))))
+                defects.append(defect_descr(self.Parent.FileName,
+                                            self.Channel,
+                                            'snap2',
+                                            self.specpos_to_time(i),
+                                            self.specpos_to_time(i)))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -494,10 +475,11 @@ class Channel:
 
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
         if sum(y) / len(y) < s.OrthocenterThreshold:
-            defects.append(Defect(self.Parent.FileName,
-                                  self.Channel,
-                                  'muted',
-                                  (0.0, self.Parent.Duration)))
+            defects.append(defect_descr(self.Parent.FileName,
+                                        self.Channel,
+                                        'muted',
+                                        0.0,
+                                        self.Parent.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -546,10 +528,11 @@ class Channel:
         # вывод резудьтата
         # если глухих фреймов больше лимита, то запись глухая
         if len(void_frame) >= lim_frame:
-            defects.append(Defect(self.Parent.FileName,
-                                  self.Channel,
-                                  'muted2',
-                                  (0.0, self.Parent.Duration)))
+            defects.append(defect_descr(self.Parent.FileName,
+                                        self.Channel,
+                                        'muted2',
+                                        0.0,
+                                        self.Parent.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -564,10 +547,11 @@ class Channel:
         ivs = wi_utils.markers_true_intervals(markers)
 
         for iv in ivs:
-            defects.append(Defect(self.Parent.FileName,
-                                  self.Channel,
-                                  'comet',
-                                  (self.specpos_to_time(iv[0]), self.specpos_to_time(iv[1]))))
+            defects.append(defect_descr(self.Parent.FileName,
+                                        self.Channel,
+                                        'comet',
+                                        self.specpos_to_time(iv[0]),
+                                        self.specpos_to_time(iv[1])))
 
     # ----------------------------------------------------------------------------------------------
 
