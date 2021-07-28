@@ -32,7 +32,7 @@ def defect_descr(rec, ch, name, beg, end):
     :return: Описание дефекта.
     """
 
-    return {"rec": rec, "ch": ch, "name": name, "beg": beg, "end": end}
+    return {'rec': rec, 'ch': ch, 'name': name, 'beg': beg, 'end': end}
 
 
 # ==================================================================================================
@@ -69,11 +69,11 @@ class Channel:
         self.V = None
 
         # Безусловно генерируем спектры.
-        self.generate_spectre()
+        self.generate_spectres()
 
     # ----------------------------------------------------------------------------------------------
 
-    def generate_spectre(self):
+    def generate_spectres(self):
         """
         Генерация спектра.
         """
@@ -417,6 +417,37 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_silence2(self, x, limx = 0.02, hop_length=512, Xdb=None):
+
+        '''
+
+        :param x: аудиозапись
+        :param limx: предел амплитуды для однаружения тишины
+        :param hop_length: ширина одно фрейма
+        :return: матрица частот с обнуленными столбцами в местах нахождения тишины
+        '''
+
+        tms = []
+        for wf in range(0, len(x) + 1, hop_length):
+
+            bm = x[wf:wf + hop_length] <= limx
+
+            # если это тишина, то
+            if all(bm):
+                tms.append(0)
+
+            # если это звук, то
+            else:
+                tms.append(1)
+
+        # обнуляем все тихие места
+        res = np.multiply(Xdb, tms)
+
+        # print(res)
+        return res
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_snap(self, defects):
         """
         Получение дефектов snap.
@@ -553,61 +584,6 @@ class Channel:
                                         self.specpos_to_time(iv[0]),
                                         self.specpos_to_time(iv[1])))
 
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_by_name(self, defect_name, defects):
-        """
-        Получение дефектов заданного типа.
-
-        :param defect_name: Имя дефекта.
-        :param defects: Список дефектов.
-        """
-
-        if defect_name == 'snap':
-            self.get_defects_snap(defects)
-        elif defect_name == 'snap2':
-            self.get_defects_snap2(defects)
-        elif defect_name == 'muted':
-            self.get_defects_muted(defects)
-        elif defect_name == 'muted2':
-            self.get_defects_muted2(defects)
-        elif defect_name == 'comet':
-            self.get_defects_comet(defects)
-        else:
-            raise Exception('unknown defect name ({0})'.format(defect_name))
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_silence2(self, x, limx = 0.02, hop_length=512, Xdb=None):
-
-        '''
-
-        :param x: аудиозапись
-        :param limx: предел амплитуды для однаружения тишины
-        :param hop_length: ширина одно фрейма
-        :return: матрица частот с обнуленными столбцами в местах нахождения тишины
-        '''
-
-        tms = []
-        for wf in range(0, len(x) + 1, hop_length):
-
-            bm = x[wf:wf + hop_length] <= limx
-
-            # если это тишина, то
-            if all(bm):
-                tms.append(0)
-
-            # если это звук, то
-            else:
-                tms.append(1)
-
-        # обнуляем все тихие места
-        res = np.multiply(Xdb, tms)
-
-        # print(res)
-        return res
-
-
 # ==================================================================================================
 
 
@@ -743,19 +719,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_from_both_channels(self, defect_name, defects):
-        """
-        Получение списка дефектов для которого выполняется анализ обоих каналов.
-
-        :param defect_name: Имя дефекта.
-        :param defects: Список дефектов.
-        """
-
-        self.ch0().get_defects_by_name(defect_name, defects)
-        self.ch1().get_defects_by_name(defect_name, defects)
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defects_snap(self, defects):
         """
         Получение маркеров дефекта snap.
@@ -763,7 +726,8 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        self.get_defects_from_both_channels('snap', defects)
+        for ch in self.Channels:
+            ch.get_defects_snap(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -774,7 +738,8 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        self.get_defects_from_both_channels('snap2', defects)
+        for ch in self.Channels:
+            ch.get_defects_snap2(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -785,7 +750,8 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        self.get_defects_from_both_channels('muted', defects)
+        for ch in self.Channels:
+            ch.get_defects_muted(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -797,7 +763,8 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        self.get_defects_from_both_channels('muted2', defects)
+        for ch in self.Channels:
+            ch.get_defects_muted2(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -808,30 +775,8 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        self.get_defects_from_both_channels('comet', defects)
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_by_name(self, defect_name, defects):
-        """
-        Получение списка дефектов по имени.
-
-        :param defect_name: Имя дефекта.
-        :param defects:     Список дефектов.
-        """
-
-        if defect_name == 'snap':
-            self.get_defects_snap(defects)
-        elif defect_name == 'snap2':
-            self.get_defects_snap2(defects)
-        elif defect_name == 'muted':
-            self.get_defects_muted(defects)
-        elif defect_name == 'muted2':
-            self.get_defects_muted2(defects)
-        elif defect_name == 'comet':
-            self.get_defects_comet(defects)
-        else:
-            raise Exception('unknown defect name ({0})'.format(defect_name))
+        for ch in self.Channels:
+            ch.get_defects_comet(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -843,8 +788,16 @@ class WAV:
         :param defects:       Список дефектов.
         """
 
-        for name in defects_names:
-            self.get_defects_by_name(name, defects)
+        if 'snap' in defects_names:
+            self.get_defects_snap(defects)
+        if 'snap2' in defects_names:
+            self.get_defects_snap2(defects)
+        if 'muted' in defects_names:
+            self.get_defects_muted(defects)
+        if 'muted2' in defects_names:
+            self.get_defects_muted2(defects)
+        if 'comet' in defects_names:
+            self.get_defects_comet(defects)
 
 # ==================================================================================================
 
