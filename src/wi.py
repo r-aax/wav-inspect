@@ -82,11 +82,12 @@ class Channel:
         self.Channel = channel
         self.Y = y
 
-        # Исходный спектр, который строит librosa.
+        # Исходный и транспонированный спектр, который строит librosa.
         self.Spectre = None
-
-        # Транспонированный спектр от librosa.
         self.TSpectre = None
+
+        # Матрица нормализованного спектр, которая является массивом горизонтальных линий.
+        self.H = None
 
         # Матрица нормализованного спектра, которая является массивом вертикальных линий.
         self.V = None
@@ -103,18 +104,19 @@ class Channel:
 
         # Генерируем спектр.
         self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
-
-        # Транспонируем матрицу звука, чтобы первым измерением была отметка времени.
-        # При этом удобнее работать с матрицей, если в нижних частях массива лежат низкие частоты.
         self.TSpectre = self.Spectre.transpose()
 
-        # Генерация нормализованного спектра.
-        (min_v, max_v) = self.Parent.Settings.LimitsDb
-        min_v = max(min_v, self.TSpectre.min())
-        max_v = min(max_v, self.TSpectre.max())
-        self.V = self.TSpectre + 0.0
-        np.clip(self.V, min_v, max_v, out=self.V)
-        self.V = (self.V - min_v) / (max_v - min_v)
+        # Нормализуем матрицу спектра.
+        self.H = self.Spectre + 0.0
+        (min_val, max_val) = self.Parent.Settings.LimitsDb
+        min_val = max(min_val, self.H.min())
+        max_val = min(max_val, self.H.max())
+        np.clip(self.H, min_val, max_val, out=self.H)
+        self.H = (self.H - min_val) / (max_val - min_val)
+
+        # Транспонируем матрицу, чтобы получился массив вертикальных линий,
+        # при этом в каждой линии в нижних индексах лежат низкие частоты и наоборот.
+        self.V = self.H.transpose()
 
     # ----------------------------------------------------------------------------------------------
 
