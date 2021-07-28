@@ -6,9 +6,9 @@
 # ==================================================================================================
 
 
-class DefectSnapSettings:
+class DefectClickSettings:
     """
-    Настройки дефекта snap.
+    Настройки дефекта click.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ class DefectSnapSettings:
                  limits_before_sort,
                  limits_after_sort,
                  min_power_lo_threshold,
-                 half_snap_len,
+                 half_click_len,
                  diff_min_max_powers_hi_threshold):
         """
         Конструктор настроек для дефекта snap.
@@ -28,7 +28,7 @@ class DefectSnapSettings:
                                                  силы звука после сортировки.
         :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
                                                  минимальной силы звука.
-        :param half_snap_len:                    Половинная длина щелчка
+        :param half_click_len:                   Половинная длина щелчка
                                                  (чем меньше она, тем более резкую скейку ловим).
         :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
                                                  максимума и минимума силы звука (определяет
@@ -38,13 +38,13 @@ class DefectSnapSettings:
         self.LimitsBeforeSort = limits_before_sort
         self.LimitsAfterSort = limits_after_sort
         self.MinPowerLoThreshold = min_power_lo_threshold
-        self.HalfSnapLen = half_snap_len
+        self.HalfClickLen = half_click_len
         self.DiffMinMaxPowersHiThreshold = diff_min_max_powers_hi_threshold
 
 # ==================================================================================================
 
 
-class DefectSnap2Settings:
+class DefectClick2Settings:
     """
     Настройки дефекта snap2.
     """
@@ -55,7 +55,7 @@ class DefectSnap2Settings:
                  freq_block_width,
                  hi_threshold,
                  lo_threshold,
-                 half_snap_len):
+                 half_click_len):
         """
         Конструктор.
 
@@ -66,13 +66,13 @@ class DefectSnap2Settings:
         :param lo_threshold:     Нижняя граница нормализованной силы сигнала
                                  (после оператора выявления границ),
                                  ниже которой считается тишина.
-        :param half_snap_len:    Половина длины щелчка.
+        :param half_click_len:   Половина длины щелчка.
         """
 
         self.FreqBlockWidth = freq_block_width
         self.HiThreshold = hi_threshold
         self.LoThreshold = lo_threshold
-        self.HalfSnapLen = half_snap_len
+        self.HalfClickLen = half_click_len
 
 # ==================================================================================================
 
@@ -96,6 +96,7 @@ class DefectMutedSettings:
 
 # ==================================================================================================
 
+
 class DefectMuted2Settings:
     """
     Настройки дефекта muted2.
@@ -108,8 +109,7 @@ class DefectMuted2Settings:
                  percent_not_void,
                  percentage_of_error,
                  lim_percent_frame,
-                 muted2_silence
-                 ):
+                 muted2_silence):
 
         """
         Конструктор.
@@ -163,8 +163,8 @@ class DefectsSettings:
 
     def __init__(self,
                  limits_db,
-                 snap,
-                 snap2,
+                 click,
+                 click2,
                  muted,
                  muted2,
                  comet):
@@ -173,16 +173,16 @@ class DefectsSettings:
 
         :param limits_db: Лимиты по силе (за пределами лимитов вообще
                           не учитываем сигнал).
-        :param snap:      Настройки дефекта snap.
-        :param snap2:     Настройки дефекта snap2.
+        :param click:     Настройки дефекта click.
+        :param click2:    Настройки дефекта click2.
         :param muted:     Настройки дефекта muted.
-        :param muted2:     Настройки дефекта muted2.
+        :param muted2:    Настройки дефекта muted2.
         :param comet:     Настройки дефекта comet.
         """
 
         self.LimitsDb = limits_db
-        self.Snap = snap
-        self.Snap2 = snap2
+        self.Click = click
+        self.Click2 = click2
         self.Muted = muted
         self.Muted2 = muted2
         self.Comet = comet
@@ -192,32 +192,31 @@ class DefectsSettings:
 
 # Определение настроек по умолчанию.
 
-defect_snap_settings = DefectSnapSettings(limits_before_sort=(0.7, 0.95),
-                                          limits_after_sort=(0.25, 0.75),
-                                          min_power_lo_threshold=5.0,
-                                          half_snap_len=2,
-                                          diff_min_max_powers_hi_threshold=5.0)
+defect_click_settings = DefectClickSettings(limits_before_sort=(0.7, 0.95),
+                                            limits_after_sort=(0.25, 0.75),
+                                            min_power_lo_threshold=5.0,
+                                            half_click_len=2,
+                                            diff_min_max_powers_hi_threshold=5.0)
 
-defect_snap2_settings = DefectSnap2Settings(freq_block_width=16,
-                                            hi_threshold=0.5,
-                                            lo_threshold=0.01,
-                                            half_snap_len=2)
+defect_click2_settings = DefectClick2Settings(freq_block_width=16,
+                                              hi_threshold=0.5,
+                                              lo_threshold=0.01,
+                                              half_click_len=2)
 
 defect_muted_settings = DefectMutedSettings(orthocenter_threshold=75)
 
-defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db = 10,
-                                            percent_not_void = 10,
-                                            percentage_of_error = 10,
-                                            lim_percent_frame = 65,
-                                            muted2_silence=0.005
-                                              )
+defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db=10,
+                                              percent_not_void=10,
+                                              percentage_of_error=10,
+                                              lim_percent_frame=65,
+                                              muted2_silence=0.005)
 
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
-                                   snap=defect_snap_settings,
-                                   snap2=defect_snap2_settings,
+                                   click=defect_click_settings,
+                                   click2=defect_click2_settings,
                                    muted=defect_muted_settings,
                                    muted2=defect_muted2_settings,
                                    comet=defect_comet_settings)

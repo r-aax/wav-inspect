@@ -330,14 +330,14 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap_markers(self):
+    def get_defect_click_markers(self):
         """
-        Получение маркеров дефекта snap.
+        Получение маркеров дефекта click.
 
-        :return: Список маркеров snap.
+        :return: Список маркеров click.
         """
 
-        s = self.Parent.Settings.Snap
+        s = self.Parent.Settings.Click
 
         d = [wi_utils.min_max_extended(tsi,
                                        limits_before_sort=s.LimitsBeforeSort,
@@ -349,24 +349,24 @@ class Channel:
         markers = [0] * n
 
         # Производим разметку.
-        for i in range(s.HalfSnapLen, n):
-            is_snap = (d[i][0] - d[i - s.HalfSnapLen][0] > s.MinPowerLoThreshold)
+        for i in range(s.HalfClickLen, n):
+            is_click = (d[i][0] - d[i - s.HalfClickLen][0] > s.MinPowerLoThreshold)
             is_cnst = (d[i][1] - d[i][0] < s.DiffMinMaxPowersHiThreshold)
-            if is_snap and is_cnst:
+            if is_click and is_cnst:
                 markers[i] = 1
 
         return markers
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_snap2_markers(self):
+    def get_defect_click2_markers(self):
         """
-        Получение маркеров дефекта snap2.
+        Получение маркеров дефекта click2.
 
-        :return: Список маркеров snap2.
+        :return: Список маркеров click2.
         """
 
-        s = self.Parent.Settings.Snap2
+        s = self.Parent.Settings.Click2
 
         # Применяем фильтр Собеля для выявления границ.
         ns2 = wi_utils.apply_filter_2d(self.V,
@@ -378,8 +378,8 @@ class Channel:
              for c in ns2]
         y = [min(vi) for vi in v]
         hi, lo = s.HiThreshold, s.LoThreshold
-        markers = [(i > s.HalfSnapLen) and (i < len(v) - s.HalfSnapLen)
-                   and (y[i] > hi) and (y[i - s.HalfSnapLen] < lo) and (y[i + s.HalfSnapLen] < lo)
+        markers = [(i > s.HalfClickLen) and (i < len(v) - s.HalfClickLen)
+                   and (y[i] > hi) and (y[i - s.HalfClickLen] < lo) and (y[i + s.HalfClickLen] < lo)
                    for i in range(len(v))]
 
         return markers
@@ -405,15 +405,15 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def show_defect_snap_markers(self, figsize=(20, 8)):
+    def show_defect_click_markers(self, figsize=(20, 8)):
         """
-        Демонстрация маркеров дефекта snap.
+        Демонстрация маркеров дефекта click.
 
         :param figsize: Размер картинки.
         """
 
-        markers = self.get_defect_snap_markers()
-        wi_utils.show_graph(markers, figsize=figsize, title='Defect Snap Markers')
+        markers = self.get_defect_click_markers()
+        wi_utils.show_graph(markers, figsize=figsize, title='Defect Click Markers')
 
     # ----------------------------------------------------------------------------------------------
 
@@ -448,41 +448,41 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self, defects):
+    def get_defects_click(self, defects):
         """
-        Получение дефектов snap.
+        Получение дефектов click.
 
         :param defects: Список дефектов.
         """
 
-        markers = self.get_defect_snap_markers()
+        markers = self.get_defect_click_markers()
 
         # Формируем список дефектов.
         for i, marker in enumerate(markers):
             if marker:
                 defects.append(defect_descr(self.Parent.FileName,
                                             self.Channel,
-                                            'snap',
+                                            'click',
                                             self.specpos_to_time(i),
                                             self.specpos_to_time(i)))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap2(self, defects):
+    def get_defects_click2(self, defects):
         """
-        Получение дефектов snap2.
+        Получение дефектов click2.
 
         :param defects: Список дефектов.
         """
 
-        markers = self.get_defect_snap2_markers()
+        markers = self.get_defect_click2_markers()
 
         # Формируем список дефектов.
         for i, marker in enumerate(markers):
             if marker:
                 defects.append(defect_descr(self.Parent.FileName,
                                             self.Channel,
-                                            'snap2',
+                                            'click2',
                                             self.specpos_to_time(i),
                                             self.specpos_to_time(i)))
 
@@ -719,27 +719,27 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self, defects):
+    def get_defects_click(self, defects):
         """
-        Получение маркеров дефекта snap.
+        Получение маркеров дефекта click.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_snap(defects)
+            ch.get_defects_click(defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap2(self, defects):
+    def get_defects_click2(self, defects):
         """
-        Получение маркеров дефекта snap2.
+        Получение маркеров дефекта click2.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_snap2(defects)
+            ch.get_defects_click2(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -788,10 +788,10 @@ class WAV:
         :param defects:       Список дефектов.
         """
 
-        if 'snap' in defects_names:
-            self.get_defects_snap(defects)
-        if 'snap2' in defects_names:
-            self.get_defects_snap2(defects)
+        if 'click' in defects_names:
+            self.get_defects_click(defects)
+        if 'click2' in defects_names:
+            self.get_defects_click2(defects)
         if 'muted' in defects_names:
             self.get_defects_muted(defects)
         if 'muted2' in defects_names:
@@ -872,8 +872,8 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: f in ['0001.wav', '0003.wav'],
-        defects_names=['snap', 'snap2', 'muted', 'muted2'])
+        filter_fun=lambda f: True,
+        defects_names=['click', 'click2', 'muted', 'muted2'])
 
 
 # ==================================================================================================
