@@ -438,53 +438,49 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self):
+    def get_defects_snap(self, defects):
         """
         Получение дефектов snap.
 
-        :return: Список дефектов snap.
+        :param defects: Список дефектов.
         """
 
         markers = self.get_defect_snap_markers()
 
         # Формируем список дефектов.
-        objs = [Defect(self.Parent.FileName,
-                       self.Channel,
-                       'snap',
-                       (self.specpos_to_time(i), self.specpos_to_time(i)))
-                for (i, marker) in enumerate(markers)
-                if (marker == 1)]
-
-        return objs
+        for i, marker in enumerate(markers):
+            if marker:
+                defects.append(Defect(self.Parent.FileName,
+                                      self.Channel,
+                                      'snap',
+                                      (self.specpos_to_time(i), self.specpos_to_time(i))))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap2(self):
+    def get_defects_snap2(self, defects):
         """
         Получение дефектов snap2.
 
-        :return: Список дефектов snap2.
+        :param defects: Список дефектов.
         """
 
         markers = self.get_defect_snap2_markers()
 
         # Формируем список дефектов.
-        objs = [Defect(self.Parent.FileName,
-                       self.Channel,
-                       'snap2',
-                       (self.specpos_to_time(i), self.specpos_to_time(i)))
-                for (i, marker) in enumerate(markers)
-                if (marker == 1)]
-
-        return objs
+        for i, marker in enumerate(markers):
+            if marker:
+                defects.append(Defect(self.Parent.FileName,
+                                      self.Channel,
+                                      'snap2',
+                                      (self.specpos_to_time(i), self.specpos_to_time(i))))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self):
+    def get_defects_muted(self, defects):
         """
         Получение дефектов muted.
 
-        :return: Список дефектов muted.
+        :param defects: Список дефектов.
         """
 
         s = self.Parent.Settings.Muted
@@ -498,41 +494,19 @@ class Channel:
 
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
         if sum(y) / len(y) < s.OrthocenterThreshold:
-            return [Defect(self.Parent.FileName,
-                           self.Channel,
-                           'muted',
-                           (0.0, self.Parent.Duration))]
-        else:
-            return []
+            defects.append(Defect(self.Parent.FileName,
+                                  self.Channel,
+                                  'muted',
+                                  (0.0, self.Parent.Duration)))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_comet(self):
-        """
-        Получение дефектов comet.
-
-        :return: Список дефектов comet.
-        """
-
-        markers = self.get_defect_comet_markers()
-        ivs = wi_utils.markers_true_intervals(markers)
-
-        objs = [Defect(self.Parent.FileName,
-                       self.Channel,
-                       'comet',
-                       (self.specpos_to_time(iv[0]), self.specpos_to_time(iv[1])))
-                for iv in ivs]
-
-        return objs
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_muted2(self):
+    def get_defects_muted2(self, defects):
 
         '''
         Получение дефектов muted2.
 
-        :return: Список дефектов muted2.
+        :param defects: Список дефектов.
         '''
 
         s = self.Parent.Settings.Muted2
@@ -572,35 +546,49 @@ class Channel:
         # вывод резудьтата
         # если глухих фреймов больше лимита, то запись глухая
         if len(void_frame) >= lim_frame:
-            return [Defect(self.Parent.FileName,
-                           self.Channel,
-                           'muted2',
-                           (0.0, self.Parent.Duration))]
-
-        else:
-            return []
+            defects.append(Defect(self.Parent.FileName,
+                                  self.Channel,
+                                  'muted2',
+                                  (0.0, self.Parent.Duration)))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_by_name(self, defect_name):
+    def get_defects_comet(self, defects):
+        """
+        Получение дефектов comet.
+
+        :param defects: Список дефектов.
+        """
+
+        markers = self.get_defect_comet_markers()
+        ivs = wi_utils.markers_true_intervals(markers)
+
+        for iv in ivs:
+            defects.append(Defect(self.Parent.FileName,
+                                  self.Channel,
+                                  'comet',
+                                  (self.specpos_to_time(iv[0]), self.specpos_to_time(iv[1]))))
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_by_name(self, defect_name, defects):
         """
         Получение дефектов заданного типа.
 
         :param defect_name: Имя дефекта.
-
-        :return: Список дефектов заданного типа.
+        :param defects: Список дефектов.
         """
 
         if defect_name == 'snap':
-            return self.get_defects_snap()
+            self.get_defects_snap(defects)
         elif defect_name == 'snap2':
-            return self.get_defects_snap2()
+            self.get_defects_snap2(defects)
         elif defect_name == 'muted':
-            return self.get_defects_muted()
-        elif defect_name == 'comet':
-            return self.get_defects_comet()
+            self.get_defects_muted(defects)
         elif defect_name == 'muted2':
-            return self.get_defects_muted2()
+            self.get_defects_muted2(defects)
+        elif defect_name == 'comet':
+            self.get_defects_comet(defects)
         else:
             raise Exception('unknown defect name ({0})'.format(defect_name))
 
@@ -771,217 +759,108 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_from_both_channels(self, defect_name):
+    def get_defects_from_both_channels(self, defect_name, defects):
         """
         Получение списка дефектов для которого выполняется анализ обоих каналов.
 
         :param defect_name: Имя дефекта.
-
-        :return: Список дефектов.
+        :param defects: Список дефектов.
         """
 
-        ch0dfs = self.ch0().get_defects_by_name(defect_name)
-        ch1dfs = self.ch1().get_defects_by_name(defect_name)
-
-        return ch0dfs + ch1dfs
+        self.ch0().get_defects_by_name(defect_name, defects)
+        self.ch1().get_defects_by_name(defect_name, defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap(self):
+    def get_defects_snap(self, defects):
         """
         Получение маркеров дефекта snap.
 
-        :return: Список дефектов snap.
+        :param defects: Список дефектов.
         """
 
-        return self.get_defects_from_both_channels('snap')
+        self.get_defects_from_both_channels('snap', defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_snap2(self):
+    def get_defects_snap2(self, defects):
         """
         Получение маркеров дефекта snap2.
 
-        :return: Список дефектов snap2.
+        :param defects: Список дефектов.
         """
 
-        return self.get_defects_from_both_channels('snap2')
+        self.get_defects_from_both_channels('snap2', defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self):
+    def get_defects_muted(self, defects):
         """
         Получение маркеров дефекта muted.
 
-        :return: Список дефектов muted.
+        :param defects: Список дефектов.
         """
 
-        return self.get_defects_from_both_channels('muted')
+        self.get_defects_from_both_channels('muted', defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_comet(self):
+    def get_defects_muted2(self, defects):
+
+        """
+        Получение маркеров дефекта muted2.
+
+        :param defects: Список дефектов.
+        """
+
+        self.get_defects_from_both_channels('muted2', defects)
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_comet(self, defects):
         """
         Получение маркеров дефекта comet.
 
-        :return: Список дефектов comet.
+        :param defects: Список дефектов.
         """
 
-        return self.get_defects_from_both_channels('comet')
+        self.get_defects_from_both_channels('comet', defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_by_name(self, defect_name):
+    def get_defects_by_name(self, defect_name, defects):
         """
         Получение списка дефектов по имени.
 
         :param defect_name: Имя дефекта.
-
-        :return: Список дефектов.
+        :param defects:     Список дефектов.
         """
 
         if defect_name == 'snap':
-            return self.get_defects_snap()
+            self.get_defects_snap(defects)
         elif defect_name == 'snap2':
-            return self.get_defects_snap2()
+            self.get_defects_snap2(defects)
         elif defect_name == 'muted':
-            return self.get_defects_muted()
+            self.get_defects_muted(defects)
         elif defect_name == 'muted2':
-            return self.get_defects_muted2()
+            self.get_defects_muted2(defects)
         elif defect_name == 'comet':
-            return self.get_defects_comet()
+            self.get_defects_comet(defects)
         else:
             raise Exception('unknown defect name ({0})'.format(defect_name))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects(self, defects_names):
+    def get_defects(self, defects_names, defects):
         """
         Получение списка дефектов по списку имен дефектов.
 
         :param defects_names: Список имен дефектов.
-
-        :return: Список дефектов.
+        :param defects:       Список дефектов.
         """
 
-        m = [self.get_defects_by_name(name) for name in defects_names]
-
-        return list(itertools.chain(*m))
-    
-    # ----------------------------------------------------------------------------------------------
-    
-    def get_defects_echo(self, filename=None, cor_p=0.9, len_echo=2, times_echo=2, hop_length=512):
-        
-        """
-        Функция обнаружения эхо эффекта в аудиосигнале.
-
-        Аргументы функции:
-        root_path - полный путь к файлу + полное название файла с иследуемой аудиозаписью (тип - str)
-        cor_p - порог обнаружения эхо: корреляция выше этого значения считается первым признаком наличия эхо (тип - float, диапазон значений [0, 1])
-        len_echo - минимальная длительность события эхо для детектирования явления (тип - int, измеряется в фреймах)
-        times_echo - минимальное количество повторений эхо для детектирования явления (тип - int, измеряется в фреймах)
-        hop_length - размер окна для кратковременного преобразования Фурье (тип - int, кратное степени 2)
-
-        Результатом работы функции является:
-        t - время начала и конца эффекта эхо (тип - list, len(t) => 2, t[0] - начало эха (float), t[1] - конец эхо (float))
-        или
-        Сообщение: 'В данном аудиосигнале эхо не найдено!'
-
-        """
-        self.FileName = filename
-        
-        # чтение файла
-        x, sr = librosa.load(filename, mono=True, sr = None)
-
-        # кратковременное преобразование Фурье
-        X = librosa.stft(x, hop_length=hop_length)
-        Xmag = abs(X)
-
-        # получение корреляционной матрицы
-        cor = np.zeros((Xmag.shape[1] - 1, Xmag.shape[1] - 1)) # матрица для записи в нее результатов корреляции
-
-        for i in range(Xmag.shape[1] - 1): # анализ каждого столбца на корреляю с каждым последующим
-
-            seq = Xmag.T[i]
-            for j in range(0, Xmag.shape[1] - 1 - i):
-                seq2 = Xmag.T[i+j+1]
-                result = sp.stats.pearsonr(seq, seq2)
-                cor[i][j] = round(result[0], 3) # анализ корреляции двух матриц и запись результата проверки в нулевую матрицу
-
-        # формирование матрици корреляций с булевыми значениями
-        cor_true = cor >= cor_p # порог обнаружения эхо
-
-        point_echo = [] # список для записи отсечек эхо
-        # проверяем каждую строку матрицы корреляции с булевыми значениями
-        for i_num, i_val in enumerate(cor_true[ : -1 * times_echo]): # нужно проверить все строки кроме последних
-
-            skan_core = [] # задаем ядро счетчика эха в строке, сюда записываем номера столбов эхо, далее идет условие его формирования в конкретной строке
-            for bool_num, bool_ansver in enumerate(i_val): # скан значений строки - проходимся вдоль строки, ищем начало столба эхо
-
-                if bool_ansver == True: # нашли начало столба эхо
-
-                    tru = 1 # счетчик последовательности совпадений вертикальных Тру, начало отсчета с 1
-                    for i_vert_skan in range(1, cor_true.shape[0]-i_num): # от найденной точки идем вниз по матрице корреляций с булевыми значениями
-
-                        if i_num + i_vert_skan >= cor_true.shape[0]: # прекратить цикл, если индекс вышел за пределы массива
-                            break
-                        elif cor_true[i_num + i_vert_skan][bool_num] == False: # нету продолжения, заканчиваем цикл, продолжаем искать следующее значение в строке
-                            break
-                        else: # нашли продолжение! переставляем счетчик последовательности - глубины столба эхо
-                            tru += 1
-
-                    if tru >= len_echo: # счетчи глубины столба эхо больше порога, предполагаем что это признак эхо!
-
-                        skan_core.append(bool_num) # запоминаем индекс столбца матрицы корелляции, где были замечены признаки эхо
-
-            # действия внутри строки закончились, подытоживаем результат работы со строкой
-            if len(skan_core) > times_echo: # проверка на наличие признаков эхов в строке
-
-                steps_echo = [] # записываем сюда расстояние между каждым столбом эхо
-                for num_sc, val_cs in enumerate(skan_core[:-1], 1): # цикл записи расстояний между столбами эхо
-
-                    steps_echo.append(skan_core[num_sc] - val_cs) # запоминаем расстояние между каждым столбом
-
-                # проверить длину шагов - равны ли они с учетом области разброса
-                echo_puls = 0 # счетчик - сколько раз расстояния между эхо оказались равны с учетом разброса в два фрейма
-                for step in range(len(steps_echo) - 1):
-                    len_step = round(steps_echo[step+1] - steps_echo[step], 0)
-                    if len_step in range(-2, 3, 1): # совпадают ли длины шагов эхо с учетом разброса от -2 до 2 (если шаги равны, то ответ 0)
-                        echo_puls += 1
-
-                # зафиксировать результат
-                if echo_puls >= times_echo: # В строке есть эхо! нужно запомнить эти отсечки, для последующей визуализации
-                    point_echo.append([i_num, skan_core]) # запомним индекс строки матрици корреляций и номера столбцов с эхо для дальнейшей интерпртации
-
-            # !конец цикла прохода одной строки, начинаем все сначала для следующей строки!
-
-        # обработка результатов - преобразование во фреймы, после во время
-
-        if len(point_echo) >= times_echo: # проверка на наличие эхо в записи
-            # данные во фреймы
-            frames = []
-            frames.append(point_echo[0][0]) # начальная точка - номер первой строки, где было замечано эхо
-            frames.append(point_echo[-1][0] + point_echo[-1][-1][-1]) # конечная точка - номер последней строкии с эхо + смещение, где последний раз было замечено эхо
-
-            # фреймы во время
-            t = librosa.frames_to_time(frames, sr=sr)
-            return t
-            
-        else:
-
-            print('В данном аудиосигнале эхо не найдено!')
- 
-    # ----------------------------------------------------------------------------------------------
-    
-    def get_defects_muted2(self):
-
-        """
-        Получение маркеров дефекта muted2.
-
-        :return: Список дефектов muted2.
-        """
-
-        return self.get_defects_from_both_channels('muted2')
+        for name in defects_names:
+            self.get_defects_by_name(name, defects)
 
 # ==================================================================================================
 
@@ -989,6 +868,7 @@ class WAV:
 def analyze_directory(directory,
                       filter_fun,
                       defects_names,
+                      defects,
                       verbose=False):
     """
     Анализ директории с файлами на наличие дефектов.
@@ -997,13 +877,11 @@ def analyze_directory(directory,
     :param filter_fun:    Дополнительная функция для отфильтровывания файлов, которые необходимо
                           анализировать.
     :param defects_names: Список имен дефектов.
+    :param defects:       Список, в который записывать дефекты.
     :param verbose:       Признак печати процесса анализа.
-
-    :return: Список дефектов.
     """
 
     fs = os.listdir(directory)
-    ds = []
     records_count = 0
     records_time = 0.0
     ts = time.time()
@@ -1019,15 +897,13 @@ def analyze_directory(directory,
             if wav.is_ok():
                 records_count = records_count + 1
                 records_time = records_time + wav.Duration
-                ds = ds + wav.get_defects(defects_names)
+                wav.get_defects(defects_names, defects)
 
     print('Process finished:')
     print('    {0} records processed'.format(records_count))
     print('    {0} s of audio records processed'.format(records_time))
-    print('    {0} defects found'.format(len(ds)))
+    print('    {0} defects found'.format(len(defects)))
     print('    {0} s time estimated'.format(time.time() - ts))
-
-    return ds
 
 
 # ==================================================================================================
@@ -1042,10 +918,12 @@ def run(directory, filter_fun, defects_names):
     :param defects_names: Список имен дефектов.
     """
 
-    defects = analyze_directory(directory,
-                                filter_fun=filter_fun,
-                                defects_names=defects_names,
-                                verbose=True)
+    defects = []
+    analyze_directory(directory,
+                      filter_fun=filter_fun,
+                      defects_names=defects_names,
+                      verbose=True,
+                      defects=defects)
 
     for d in defects:
         print(d)
