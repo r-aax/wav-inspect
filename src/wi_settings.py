@@ -77,9 +77,9 @@ class DefectClick2Settings:
 # ==================================================================================================
 
 
-class DefectMutedSettings:
+class DefectDeafSettings:
     """
-    Настройки дефекта muted.
+    Настройки дефекта deaf.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -97,9 +97,9 @@ class DefectMutedSettings:
 # ==================================================================================================
 
 
-class DefectMuted2Settings:
+class DefectDeaf2Settings:
     """
-    Настройки дефекта muted2.
+    Настройки дефекта deaf2.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -109,22 +109,22 @@ class DefectMuted2Settings:
                  percent_not_void,
                  percentage_of_error,
                  lim_percent_frame,
-                 muted2_silence):
+                 deaf2_silence):
 
         """
         Конструктор.
 
-        :param percentage_of_lim_db: порог обнаружения отсутствия частот.
-        :param percent_not_void: процент фрейма, который не исследуется.
-        :param percentage_of_error: процент погрешности для детектирования глухого фрейма.
-        :param lim_percent_frame: процент порога наличия глухих фреймов.
-        :param hop_length: ширина окна преобразования Фурье.
+        :param percentage_of_lim_db: Порог обнаружения отсутствия частот.
+        :param percent_not_void:     Процент фрейма, который не исследуется.
+        :param percentage_of_error:  Процент погрешности для детектирования глухого фрейма.
+        :param lim_percent_frame:    Процент порога наличия глухих фреймов.
+        :param deaf2_silence:        Порог преобразования глухого сигнала в тишину.
         """
         self.PercentageOfLimDb = percentage_of_lim_db
         self.PercentNotVoid = percent_not_void
         self.PercentageOfError = percentage_of_error
         self.LimPercentFrame = lim_percent_frame
-        self.Muted2Silence = muted2_silence
+        self.Deaf2Silence = deaf2_silence
 
 # ==================================================================================================
 
@@ -165,8 +165,8 @@ class DefectsSettings:
                  limits_db,
                  click,
                  click2,
-                 muted,
-                 muted2,
+                 deaf,
+                 deaf2,
                  comet):
         """
         Конструктор настроек для всех дефектов.
@@ -175,16 +175,16 @@ class DefectsSettings:
                           не учитываем сигнал).
         :param click:     Настройки дефекта click.
         :param click2:    Настройки дефекта click2.
-        :param muted:     Настройки дефекта muted.
-        :param muted2:    Настройки дефекта muted2.
+        :param deaf:      Настройки дефекта deaf.
+        :param deaf2:     Настройки дефекта deaf2.
         :param comet:     Настройки дефекта comet.
         """
 
         self.LimitsDb = limits_db
         self.Click = click
         self.Click2 = click2
-        self.Muted = muted
-        self.Muted2 = muted2
+        self.Deaf = deaf
+        self.Deaf2 = deaf2
         self.Comet = comet
 
 # ==================================================================================================
@@ -203,13 +203,13 @@ defect_click2_settings = DefectClick2Settings(freq_block_width=16,
                                               lo_threshold=0.01,
                                               half_click_len=2)
 
-defect_muted_settings = DefectMutedSettings(orthocenter_threshold=75)
+defect_deaf_settings = DefectDeafSettings(orthocenter_threshold=75)
 
-defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db=10,
-                                              percent_not_void=10,
-                                              percentage_of_error=10,
-                                              lim_percent_frame=65,
-                                              muted2_silence=0.005)
+defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
+                                            percent_not_void=10,
+                                            percentage_of_error=10,
+                                            lim_percent_frame=65,
+                                            deaf2_silence=0.005)
 
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
@@ -217,8 +217,8 @@ defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
                                    click2=defect_click2_settings,
-                                   muted=defect_muted_settings,
-                                   muted2=defect_muted2_settings,
+                                   deaf=defect_deaf_settings,
+                                   deaf2=defect_deaf2_settings,
                                    comet=defect_comet_settings)
 
 # ==================================================================================================

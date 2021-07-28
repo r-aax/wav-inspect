@@ -488,14 +488,14 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, defects):
+    def get_defects_deaf(self, defects):
         """
-        Получение дефектов muted.
+        Получение дефектов deaf.
 
         :param defects: Список дефектов.
         """
 
-        s = self.Parent.Settings.Muted
+        s = self.Parent.Settings.Deaf
 
         ns = self.V
         h = ns.shape[1]
@@ -508,21 +508,21 @@ class Channel:
         if sum(y) / len(y) < s.OrthocenterThreshold:
             defects.append(defect_descr(self.Parent.FileName,
                                         self.Channel,
-                                        'muted',
+                                        'deaf',
                                         0.0,
                                         self.Parent.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted2(self, defects):
+    def get_defects_deaf2(self, defects):
 
         '''
-        Получение дефектов muted2.
+        Получение дефектов deaf2.
 
         :param defects: Список дефектов.
         '''
 
-        s = self.Parent.Settings.Muted2
+        s = self.Parent.Settings.Deaf2
 
         # кратковременное преобразование Фурье
         Xdb = self.Spectre
@@ -531,7 +531,7 @@ class Channel:
         lim_db = int((int(Xdb.max()) - int(Xdb.min())) / 100 * s.PercentageOfLimDb) + int(Xdb.min())
 
         # обнулить фреймы с тишиной
-        Xdb = self.get_silence2(x = self.Y, limx = s.Muted2Silence, Xdb = Xdb)
+        Xdb = self.get_silence2(x = self.Y, limx = s.Deaf2Silence, Xdb = Xdb)
 
         # нашли пустоты во всей матрице - все что ниже пороговой амплитуды
         Xdb = Xdb <= lim_db
@@ -561,7 +561,7 @@ class Channel:
         if len(void_frame) >= lim_frame:
             defects.append(defect_descr(self.Parent.FileName,
                                         self.Channel,
-                                        'muted2',
+                                        'deaf2',
                                         0.0,
                                         self.Parent.Duration))
 
@@ -743,28 +743,28 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, defects):
+    def get_defects_deaf(self, defects):
         """
-        Получение маркеров дефекта muted.
+        Получение маркеров дефекта deaf.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_muted(defects)
+            ch.get_defects_deaf(defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted2(self, defects):
+    def get_defects_deaf2(self, defects):
 
         """
-        Получение маркеров дефекта muted2.
+        Получение маркеров дефекта deaf2.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_muted2(defects)
+            ch.get_defects_deaf2(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -792,10 +792,10 @@ class WAV:
             self.get_defects_click(defects)
         if 'click2' in defects_names:
             self.get_defects_click2(defects)
-        if 'muted' in defects_names:
-            self.get_defects_muted(defects)
-        if 'muted2' in defects_names:
-            self.get_defects_muted2(defects)
+        if 'deaf' in defects_names:
+            self.get_defects_deaf(defects)
+        if 'deaf2' in defects_names:
+            self.get_defects_deaf2(defects)
         if 'comet' in defects_names:
             self.get_defects_comet(defects)
 
@@ -873,7 +873,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['click', 'click2', 'muted', 'muted2'])
+        defects_names=['click', 'click2', 'deaf', 'deaf2'])
 
 
 # ==================================================================================================
