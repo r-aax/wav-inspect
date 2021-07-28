@@ -50,14 +50,11 @@ class Defect:
         :return: Строка.
         """
 
-        if type(self.DefectCoords) is tuple:
-            defect_coords_str = '{0:.3f} s - {1:.3f} s'.format(self.DefectCoords[0],
-                                                               self.DefectCoords[1])
-        else:
-            defect_coords_str = '{0:.3f} s'.format(self.DefectCoords)
-
-        return 'Defect: {0} (ch {1}) : {2} ({3})'.format(self.RecordName, self.Channel,
-                                                         self.DefectName, defect_coords_str)
+        return 'Defect: {0} (ch {1}) : {2} ({3:.3f} s - {4:.3f} s)'.format(self.RecordName,
+                                                                           self.Channel,
+                                                                           self.DefectName,
+                                                                           self.DefectCoords[0],
+                                                                           self.DefectCoords[1])
 
 # ==================================================================================================
 
@@ -454,7 +451,7 @@ class Channel:
         objs = [Defect(self.Parent.FileName,
                        self.Channel,
                        'snap',
-                       self.specpos_to_time(i))
+                       (self.specpos_to_time(i), self.specpos_to_time(i)))
                 for (i, marker) in enumerate(markers)
                 if (marker == 1)]
 
@@ -475,7 +472,7 @@ class Channel:
         objs = [Defect(self.Parent.FileName,
                        self.Channel,
                        'snap2',
-                       self.specpos_to_time(i))
+                       (self.specpos_to_time(i), self.specpos_to_time(i)))
                 for (i, marker) in enumerate(markers)
                 if (marker == 1)]
 
@@ -1060,7 +1057,7 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: True,
+        filter_fun=lambda f: f in ['0001.wav', '0003.wav'],
         defects_names=['snap', 'snap2', 'muted', 'muted2'])
 
 
