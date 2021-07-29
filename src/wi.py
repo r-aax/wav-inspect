@@ -9,6 +9,7 @@ import pathlib
 import sklearn
 import numpy as np
 import scipy as sp
+import cv2
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
@@ -450,28 +451,28 @@ class Channel:
         s = self.Parent.Settings.Click2
         f, w = s.FreqBlockHeight, s.DetectWindowWidth
 
+        # Квартиль списка.
+        def q(a, ind, width):
+            return a[ind * width: (ind + 1) * width]
+
         # Отрезаем верхнюю часть частот и прогоняем через фильтр Собеля для выявления границ.
         v = self.V[:, -4 * f:]
-        v = wi_utils.apply_filter_2d(v, wi_utils.operator_sobel_gy())
+        v = cv2.filter2D(v, -1, np.array([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]))
 
         # Проходим по всем окнам и ищем в них щелчки.
         # Каждое окно нужно нормализовть отдельно, чтобы щелчки разной интенсивности
         # не экранировали друг друга.
         for i in range(len(v) // w):
-            vi = v[w * i: w * (i + 1)]
+            vi = q(v, i, w)
             np.clip(vi, 0.0, 1.0, out=vi)
             mm = vi.max()
             if mm > 0.0:
                 vi = vi / mm
-            y = np.array([min(max(c[:f]),
-                              max(c[f: 2 * f]),
-                              max(c[2 * f: 3 * f]),
-                              max(c[3 * f:])) for c in vi])
+            y = np.array([min([max(q(c, qi, f)) for qi in range(4)]) for c in vi])
             if (y.max() - y.mean() > s.Threshold) and (y.mean() < s.MeanThreshold):
                 t = self.specpos_to_time(w * i + np.argmax(y))
-                defects.append(defect_descr(self.Parent.FileName,
-                                            self.Channel,
-                                            'click2', t, t))
+                defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
+                                'name': 'click2', 'beg': t, 'end': t})
 
     # ----------------------------------------------------------------------------------------------
 
