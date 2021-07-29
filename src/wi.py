@@ -359,33 +359,6 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_click2_markers(self):
-        """
-        Получение маркеров дефекта click2.
-
-        :return: Список маркеров click2.
-        """
-
-        s = self.Parent.Settings.Click2
-
-        # Применяем фильтр Собеля для выявления границ.
-        ns2 = wi_utils.apply_filter_2d(self.V,
-                                       wi_utils.operator_sobel_gy())
-
-        # Получаем маркеры.
-        w = s.FreqBlockWidth
-        v = [(max(c[-w:]), max(c[-2 * w:-w]), max(c[-3 * w:-2 * w]), max(c[-4 * w:-3 * w]))
-             for c in ns2]
-        y = [min(vi) for vi in v]
-        hi, lo = s.HiThreshold, s.LoThreshold
-        markers = [(i > s.HalfClickLen) and (i < len(v) - s.HalfClickLen)
-                   and (y[i] > hi) and (y[i - s.HalfClickLen] < lo) and (y[i + s.HalfClickLen] < lo)
-                   for i in range(len(v))]
-
-        return markers
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defect_comet_markers(self):
         """
         Получение маркеров дефекта comet.
@@ -456,15 +429,14 @@ class Channel:
         """
 
         markers = self.get_defect_click_markers()
+        ivs = wi_utils.markers_true_intervals(markers)
 
-        # Формируем список дефектов.
-        for i, marker in enumerate(markers):
-            if marker:
-                defects.append(defect_descr(self.Parent.FileName,
-                                            self.Channel,
-                                            'click',
-                                            self.specpos_to_time(i),
-                                            self.specpos_to_time(i)))
+        for iv in ivs:
+            defects.append(defect_descr(self.Parent.FileName,
+                                        self.Channel,
+                                        'click',
+                                        self.specpos_to_time(iv[0]),
+                                        self.specpos_to_time(iv[1])))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -475,16 +447,31 @@ class Channel:
         :param defects: Список дефектов.
         """
 
-        markers = self.get_defect_click2_markers()
+        s = self.Parent.Settings.Click2
+        f, w = s.FreqBlockHeight, s.DetectWindowWidth
 
-        # Формируем список дефектов.
-        for i, marker in enumerate(markers):
-            if marker:
+        # Отрезаем верхнюю часть частот и прогоняем через фильтр Собеля для выявления границ.
+        v = self.V[:, -4 * f:]
+        v = wi_utils.apply_filter_2d(v, wi_utils.operator_sobel_gy())
+
+        # Проходим по всем окнам и ищем в них щелчки.
+        # Каждое окно нужно нормализовть отдельно, чтобы щелчки разной интенсивности
+        # не экранировали друг друга.
+        for i in range(len(v) // w):
+            vi = v[w * i: w * (i + 1)]
+            np.clip(vi, 0.0, 1.0, out=vi)
+            mm = vi.max()
+            if mm > 0.0:
+                vi = vi / mm
+            y = np.array([min(max(c[:f]),
+                              max(c[f: 2 * f]),
+                              max(c[2 * f: 3 * f]),
+                              max(c[3 * f:])) for c in vi])
+            if (y.max() - y.mean() > s.Threshold) and (y.mean() < s.MeanThreshold):
+                t = self.specpos_to_time(w * i + np.argmax(y))
                 defects.append(defect_descr(self.Parent.FileName,
                                             self.Channel,
-                                            'click2',
-                                            self.specpos_to_time(i),
-                                            self.specpos_to_time(i)))
+                                            'click2', t, t))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -873,7 +860,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['click', 'click2', 'deaf', 'deaf2'])
+        defects_names=['click2'])
 
 
 # ==================================================================================================

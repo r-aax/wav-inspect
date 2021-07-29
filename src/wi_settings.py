@@ -46,33 +46,32 @@ class DefectClickSettings:
 
 class DefectClick2Settings:
     """
-    Настройки дефекта snap2.
+    Настройки дефекта click2.
     """
 
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 freq_block_width,
-                 hi_threshold,
-                 lo_threshold,
-                 half_click_len):
+                 freq_block_height,
+                 detect_window_width,
+                 threshold,
+                 mean_threshold):
         """
         Конструктор.
 
-        :param freq_block_width: Ширина блока частот, по которым ищется максимум.
-        :param hi_threshold:     Верхняя граница нормализованнной силы сигнала
-                                 (после оператора выявления границ),
-                                 выше которой считается всплеск.
-        :param lo_threshold:     Нижняя граница нормализованной силы сигнала
-                                 (после оператора выявления границ),
-                                 ниже которой считается тишина.
-        :param half_click_len:   Половина длины щелчка.
+        :param freq_block_height:   Высота блока частот, по которым ищется максимум.
+        :param detect_window_width: Ширина окна на спектрограмме,
+                                    внутри которого определяется щелчок.
+        :param threshold:           Порог детектирования щелчка (разница между максимальным
+                                    и средним значением в окне).
+        :param mean_threshold:      Среднее значение сигнала в окне, выше которого
+                                    щелчок не определяется.
         """
 
-        self.FreqBlockWidth = freq_block_width
-        self.HiThreshold = hi_threshold
-        self.LoThreshold = lo_threshold
-        self.HalfClickLen = half_click_len
+        self.FreqBlockHeight = freq_block_height
+        self.DetectWindowWidth = detect_window_width
+        self.Threshold = threshold
+        self.MeanThreshold = mean_threshold
 
 # ==================================================================================================
 
@@ -198,10 +197,10 @@ defect_click_settings = DefectClickSettings(limits_before_sort=(0.7, 0.95),
                                             half_click_len=2,
                                             diff_min_max_powers_hi_threshold=5.0)
 
-defect_click2_settings = DefectClick2Settings(freq_block_width=16,
-                                              hi_threshold=0.5,
-                                              lo_threshold=0.01,
-                                              half_click_len=2)
+defect_click2_settings = DefectClick2Settings(freq_block_height=16,
+                                              detect_window_width=32,
+                                              threshold=0.6,
+                                              mean_threshold=0.1)
 
 defect_deaf_settings = DefectDeafSettings(orthocenter_threshold=75)
 
