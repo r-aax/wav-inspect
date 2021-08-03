@@ -389,14 +389,14 @@ class Channel:
         """
 
         s = self.Parent.Settings.Click
-        win_h, win_w = s.WinH, s.WinW
+        qs, win_h, win_w = s.Quartiles, s.WinH, s.WinW
 
         # Квартиль списка.
         def q(a, ind, width):
             return a[ind * width: (ind + 1) * width]
 
         # Отрезаем верхнюю часть частот и прогоняем через фильтр Собеля для выявления границ.
-        v = self.V[:, -4 * win_h:]
+        v = self.V[:, -qs * win_h:]
         v = cv2.filter2D(v, -1, np.array([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]))
 
         # Проходим по всем окнам и ищем в них щелчки.
@@ -408,7 +408,7 @@ class Channel:
             mm = vi.max()
             if mm > 0.0:
                 vi = vi / mm
-            y = np.array([min([max(q(c, qi, win_h)) for qi in range(4)]) for c in vi])
+            y = np.array([min([max(q(c, qi, win_h)) for qi in range(qs)]) for c in vi])
             if (y.max() - y.mean() > s.Thr) and (y.mean() < s.MeanThr):
                 t = self.specpos_to_time(win_w * i + np.argmax(y))
                 defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
@@ -788,7 +788,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf'])
+        defects_names=['click'])
 
 
 # ==================================================================================================
