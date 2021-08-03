@@ -381,14 +381,14 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_click2(self, defects):
+    def get_defects_click(self, defects):
         """
-        Получение дефектов click2.
+        Получение дефектов click.
 
         :param defects: Список дефектов.
         """
 
-        s = self.Parent.Settings.Click2
+        s = self.Parent.Settings.Click
         f, w = s.FreqBlockHeight, s.DetectWindowWidth
 
         # Квартиль списка.
@@ -412,7 +412,7 @@ class Channel:
             if (y.max() - y.mean() > s.Threshold) and (y.mean() < s.MeanThreshold):
                 t = self.specpos_to_time(w * i + np.argmax(y))
                 defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                                'name': 'click2', 'beg': t, 'end': t})
+                                'name': 'click', 'beg': t, 'end': t})
 
     # ----------------------------------------------------------------------------------------------
 
@@ -647,15 +647,15 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_click2(self, defects):
+    def get_defects_click(self, defects):
         """
-        Получение маркеров дефекта click2.
+        Получение дефектов click.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_click2(defects)
+            ch.get_defects_click(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -704,8 +704,8 @@ class WAV:
         :param defects:       Список дефектов.
         """
 
-        if 'click2' in defects_names:
-            self.get_defects_click2(defects)
+        if 'click' in defects_names:
+            self.get_defects_click(defects)
         if 'deaf' in defects_names:
             self.get_defects_deaf(defects)
         if 'deaf2' in defects_names:
@@ -786,8 +786,8 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: True,
-        defects_names=['click2', 'deaf'])
+        filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
+        defects_names=['click', 'deaf'])
 
 
 # ==================================================================================================

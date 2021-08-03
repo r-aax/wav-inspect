@@ -6,7 +6,7 @@
 # ==================================================================================================
 
 
-class DefectClick2Settings:
+class DefectClickSettings:
     """
     Настройки дефекта click2.
     """
@@ -124,7 +124,7 @@ class DefectsSettings:
 
     def __init__(self,
                  limits_db,
-                 click2,
+                 click,
                  deaf,
                  deaf2,
                  comet):
@@ -140,7 +140,7 @@ class DefectsSettings:
         """
 
         self.LimitsDb = limits_db
-        self.Click2 = click2
+        self.Click = click
         self.Deaf = deaf
         self.Deaf2 = deaf2
         self.Comet = comet
@@ -150,10 +150,10 @@ class DefectsSettings:
 
 # Определение настроек по умолчанию.
 
-defect_click2_settings = DefectClick2Settings(freq_block_height=16,
-                                              detect_window_width=32,
-                                              threshold=0.6,
-                                              mean_threshold=0.1)
+defect_click_settings = DefectClickSettings(freq_block_height=16,
+                                            detect_window_width=32,
+                                            threshold=0.6,
+                                            mean_threshold=0.1)
 
 defect_deaf_settings = DefectDeafSettings(orthocenter_threshold=75)
 
@@ -167,7 +167,7 @@ defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
-                                   click2=defect_click2_settings,
+                                   click=defect_click_settings,
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
                                    comet=defect_comet_settings)
