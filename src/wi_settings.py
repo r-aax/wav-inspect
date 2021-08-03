@@ -14,26 +14,29 @@ class DefectClickSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 freq_block_height,
-                 detect_window_width,
-                 threshold,
-                 mean_threshold):
+                 win_h,
+                 win_w,
+                 thr,
+                 mean_thr):
         """
         Конструктор.
 
-        :param freq_block_height:   Высота блока частот, по которым ищется максимум.
-        :param detect_window_width: Ширина окна на спектрограмме,
-                                    внутри которого определяется щелчок.
-        :param threshold:           Порог детектирования щелчка (разница между максимальным
-                                    и средним значением в окне).
-        :param mean_threshold:      Среднее значение сигнала в окне, выше которого
-                                    щелчок не определяется.
+        :param win_h:    Высота блока частот, по которым ищется максимум.
+        :param win_w:    Ширина окна на спектрограмме,
+                         внутри которого определяется щелчок.
+        :param thr:      Порог детектирования щелчка, разница между максимальным
+                         и средним значением в окне
+                         (порог применяется к нормализованным значениям, поэтому
+                         измеряется в относительных величинах, максимальное значение 1).
+        :param mean_thr: Среднее значение сигнала в окне, выше которого щелчок не определяется
+                         (порог применяется к нормализованным значениям, поэтому
+                         измеряется в относительных величинах, максимальное значение 1).
         """
 
-        self.FreqBlockHeight = freq_block_height
-        self.DetectWindowWidth = detect_window_width
-        self.Threshold = threshold
-        self.MeanThreshold = mean_threshold
+        self.WinH = win_h
+        self.WinW = win_w
+        self.Thr = thr
+        self.MeanThr = mean_thr
 
 # ==================================================================================================
 
@@ -133,7 +136,7 @@ class DefectsSettings:
 
         :param limits_db: Лимиты по силе (за пределами лимитов вообще
                           не учитываем сигнал).
-        :param click2:    Настройки дефекта click2.
+        :param click:     Настройки дефекта click2.
         :param deaf:      Настройки дефекта deaf.
         :param deaf2:     Настройки дефекта deaf2.
         :param comet:     Настройки дефекта comet.
@@ -150,10 +153,10 @@ class DefectsSettings:
 
 # Определение настроек по умолчанию.
 
-defect_click_settings = DefectClickSettings(freq_block_height=16,
-                                            detect_window_width=32,
-                                            threshold=0.6,
-                                            mean_threshold=0.1)
+defect_click_settings = DefectClickSettings(win_h=16,
+                                            win_w=32,
+                                            thr=0.6,
+                                            mean_thr=0.1)
 
 defect_deaf_settings = DefectDeafSettings(orthocenter_threshold=75)
 

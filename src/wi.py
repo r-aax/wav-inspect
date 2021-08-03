@@ -389,28 +389,28 @@ class Channel:
         """
 
         s = self.Parent.Settings.Click
-        f, w = s.FreqBlockHeight, s.DetectWindowWidth
+        win_h, win_w = s.WinH, s.WinW
 
         # Квартиль списка.
         def q(a, ind, width):
             return a[ind * width: (ind + 1) * width]
 
         # Отрезаем верхнюю часть частот и прогоняем через фильтр Собеля для выявления границ.
-        v = self.V[:, -4 * f:]
+        v = self.V[:, -4 * win_h:]
         v = cv2.filter2D(v, -1, np.array([[-1.0, -2.0, -1.0], [0.0, 0.0, 0.0], [1.0, 2.0, 1.0]]))
 
         # Проходим по всем окнам и ищем в них щелчки.
         # Каждое окно нужно нормализовть отдельно, чтобы щелчки разной интенсивности
         # не экранировали друг друга.
-        for i in range(len(v) // w):
-            vi = q(v, i, w)
+        for i in range(len(v) // win_w):
+            vi = q(v, i, win_w)
             np.clip(vi, 0.0, 1.0, out=vi)
             mm = vi.max()
             if mm > 0.0:
                 vi = vi / mm
-            y = np.array([min([max(q(c, qi, f)) for qi in range(4)]) for c in vi])
-            if (y.max() - y.mean() > s.Threshold) and (y.mean() < s.MeanThreshold):
-                t = self.specpos_to_time(w * i + np.argmax(y))
+            y = np.array([min([max(q(c, qi, win_h)) for qi in range(4)]) for c in vi])
+            if (y.max() - y.mean() > s.Thr) and (y.mean() < s.MeanThr):
+                t = self.specpos_to_time(win_w * i + np.argmax(y))
                 defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
                                 'name': 'click', 'beg': t, 'end': t})
 
@@ -786,7 +786,8 @@ def run(directory, filter_fun, defects_names):
 if __name__ == '__main__':
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
+        filter_fun=lambda f: True,
+        # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
         defects_names=['click', 'deaf'])
 
 
