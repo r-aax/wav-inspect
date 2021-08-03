@@ -6,44 +6,6 @@
 # ==================================================================================================
 
 
-class DefectClickSettings:
-    """
-    Настройки дефекта click.
-    """
-
-    # ----------------------------------------------------------------------------------------------
-
-    def __init__(self,
-                 limits_before_sort,
-                 limits_after_sort,
-                 min_power_lo_threshold,
-                 half_click_len,
-                 diff_min_max_powers_hi_threshold):
-        """
-        Конструктор настроек для дефекта snap.
-
-        :param limits_before_sort:               Границы, по которым обрубаются массивы
-                                                 силы звука до сортировки.
-        :param limits_after_sort:                Границы, по которым обрубаются массивы
-                                                 силы звука после сортировки.
-        :param min_power_lo_threshold:           Минимальное отслеживаемое значение скачка
-                                                 минимальной силы звука.
-        :param half_click_len:                   Половинная длина щелчка
-                                                 (чем меньше она, тем более резкую скейку ловим).
-        :param diff_min_max_powers_hi_threshold: Максимально допустимая разница в значениях
-                                                 максимума и минимума силы звука (определяет
-                                                 степень постоянства силы в массиве).
-        """
-
-        self.LimitsBeforeSort = limits_before_sort
-        self.LimitsAfterSort = limits_after_sort
-        self.MinPowerLoThreshold = min_power_lo_threshold
-        self.HalfClickLen = half_click_len
-        self.DiffMinMaxPowersHiThreshold = diff_min_max_powers_hi_threshold
-
-# ==================================================================================================
-
-
 class DefectClick2Settings:
     """
     Настройки дефекта click2.
@@ -162,7 +124,6 @@ class DefectsSettings:
 
     def __init__(self,
                  limits_db,
-                 click,
                  click2,
                  deaf,
                  deaf2,
@@ -172,7 +133,6 @@ class DefectsSettings:
 
         :param limits_db: Лимиты по силе (за пределами лимитов вообще
                           не учитываем сигнал).
-        :param click:     Настройки дефекта click.
         :param click2:    Настройки дефекта click2.
         :param deaf:      Настройки дефекта deaf.
         :param deaf2:     Настройки дефекта deaf2.
@@ -180,7 +140,6 @@ class DefectsSettings:
         """
 
         self.LimitsDb = limits_db
-        self.Click = click
         self.Click2 = click2
         self.Deaf = deaf
         self.Deaf2 = deaf2
@@ -190,12 +149,6 @@ class DefectsSettings:
 
 
 # Определение настроек по умолчанию.
-
-defect_click_settings = DefectClickSettings(limits_before_sort=(0.7, 0.95),
-                                            limits_after_sort=(0.25, 0.75),
-                                            min_power_lo_threshold=5.0,
-                                            half_click_len=2,
-                                            diff_min_max_powers_hi_threshold=5.0)
 
 defect_click2_settings = DefectClick2Settings(freq_block_height=16,
                                               detect_window_width=32,
@@ -214,7 +167,6 @@ defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
-                                   click=defect_click_settings,
                                    click2=defect_click2_settings,
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
