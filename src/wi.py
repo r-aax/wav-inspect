@@ -426,19 +426,16 @@ class Channel:
         s = self.Parent.Settings.Deaf
 
         ns = self.V
-        h = ns.shape[1]
-        weights = np.array([range(h)] * ns.shape[0])
-        ns2 = ns * weights
-        y = [sum(ns2[i]) / (sum(ns[i]) + 1e-10) for i in range(ns.shape[0])]
-        ind = sum(y) / len(y)
+        w, h = ns.shape[0], ns.shape[1]
+        weights = np.array([range(h)] * w)
+        nsw = ns * weights
+        y = np.array([sum(nsw[i]) / (sum(ns[i]) + 1e-10) for i in range(w)])
+        p = 100.0 * y.mean() / h
 
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
-        if sum(y) / len(y) < s.OrthocenterThreshold:
-            defects.append(defect_descr(self.Parent.FileName,
-                                        self.Channel,
-                                        'deaf',
-                                        0.0,
-                                        self.Parent.Duration))
+        if p < s.Thr:
+            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
+                            'name': 'deaf', 'beg': 0.0, 'end': self.Parent.Duration})
 
     # ----------------------------------------------------------------------------------------------
 
@@ -788,7 +785,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click'])
+        defects_names=['click', 'deaf'])
 
 
 # ==================================================================================================

@@ -53,14 +53,14 @@ class DefectDeafSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 orthocenter_threshold):
+                 thr):
         """
         Конструктор.
 
-        :param orthocenter_threshold: Порог среднего значения ортоцентра записи.
+        :param thr: Порог среднего значения ортоцентра записи (в процентах).
         """
 
-        self.OrthocenterThreshold = orthocenter_threshold
+        self.Thr = thr
 
 # ==================================================================================================
 
@@ -163,7 +163,7 @@ defect_click_settings = DefectClickSettings(quartiles=4,
                                             thr=0.6,
                                             mean_thr=0.1)
 
-defect_deaf_settings = DefectDeafSettings(orthocenter_threshold=75)
+defect_deaf_settings = DefectDeafSettings(thr=7.0)
 
 defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
                                             percent_not_void=10,
