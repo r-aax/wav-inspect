@@ -693,6 +693,30 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_asnc(self, defects):
+        """
+        Получение маркеров дефекта asnc.
+
+        :param defects: Список дефектов.
+        """
+
+        # Источник:
+        # Pablo Alonzo-Jimenez, Luis Joglar-Ongay, Xavier Serra, Dmitry Bogdanov.
+        # Automatic detection of audio problems for quality control in
+        # digital music distribution.
+        # Audio Engineering Society, Convention paper 10205.
+        # 146-th Convention, 2019 March 20-23, Dublin, Ireland.
+
+        c = np.corrcoef(self.ch0().Y, self.ch1().Y)
+
+        if c[0][1] < self.Settings.Asnc.Thr:
+            # Вместо номера канала ставим 2,
+            # так как дефект не относится к какому-то одному каналу.
+            defects.append({'rec': self.FileName, 'ch': 2,
+                            'name': 'async', 'beg': 0.0, 'end': self.Duration})
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects(self, defects_names, defects):
         """
         Получение списка дефектов по списку имен дефектов.
@@ -709,6 +733,8 @@ class WAV:
             self.get_defects_deaf2(defects)
         if 'comet' in defects_names:
             self.get_defects_comet(defects)
+        if 'asnc' in defects_names:
+            self.get_defects_asnc(defects)
 
 # ==================================================================================================
 
@@ -785,7 +811,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf'])
+        defects_names=['click', 'deaf', 'asnc'])
 
 
 # ==================================================================================================

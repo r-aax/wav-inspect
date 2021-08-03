@@ -122,6 +122,26 @@ class DefectCometSettings:
 # ==================================================================================================
 
 
+class DefectAsncSettings:
+    """
+    Настройки дефекта asnc.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 thr):
+        """
+        Конструктор.
+
+        :param thr: Порог рассинхронизации каналов.
+        """
+
+        self.Thr = thr
+
+# ==================================================================================================
+
+
 class DefectsSettings:
     """
     Настройки дефектов.
@@ -134,7 +154,8 @@ class DefectsSettings:
                  click,
                  deaf,
                  deaf2,
-                 comet):
+                 comet,
+                 asnc):
         """
         Конструктор настроек для всех дефектов.
 
@@ -144,6 +165,7 @@ class DefectsSettings:
         :param deaf:      Настройки дефекта deaf.
         :param deaf2:     Настройки дефекта deaf2.
         :param comet:     Настройки дефекта comet.
+        :param asnc:      Настрйоки дефекта asnc.
         """
 
         self.LimitsDb = limits_db
@@ -151,6 +173,7 @@ class DefectsSettings:
         self.Deaf = deaf
         self.Deaf2 = deaf2
         self.Comet = comet
+        self.Asnc = asnc
 
 # ==================================================================================================
 
@@ -174,10 +197,13 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
+defect_asnc_settings = DefectAsncSettings(thr=0.4)
+
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
-                                   comet=defect_comet_settings)
+                                   comet=defect_comet_settings,
+                                   asnc=defect_asnc_settings)
 
 # ==================================================================================================
