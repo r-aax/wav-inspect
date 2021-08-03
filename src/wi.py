@@ -331,35 +331,6 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_click_markers(self):
-        """
-        Получение маркеров дефекта click.
-
-        :return: Список маркеров click.
-        """
-
-        s = self.Parent.Settings.Click
-
-        d = [wi_utils.min_max_extended(tsi,
-                                       limits_before_sort=s.LimitsBeforeSort,
-                                       limits_after_sort=s.LimitsAfterSort)
-             for tsi in self.TSpectre]
-
-        # Создаем массив для разметки дефектов.
-        n = len(d)
-        markers = [0] * n
-
-        # Производим разметку.
-        for i in range(s.HalfClickLen, n):
-            is_click = (d[i][0] - d[i - s.HalfClickLen][0] > s.MinPowerLoThreshold)
-            is_cnst = (d[i][1] - d[i][0] < s.DiffMinMaxPowersHiThreshold)
-            if is_click and is_cnst:
-                markers[i] = 1
-
-        return markers
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defect_comet_markers(self):
         """
         Получение маркеров дефекта comet.
@@ -376,18 +347,6 @@ class Channel:
 
         return [orth[i] * (lev[i] > s.SignalThreshold) * qu[i] > s.OrthQuartileThreshold
                 for i in range(len(orth))]
-
-    # ----------------------------------------------------------------------------------------------
-
-    def show_defect_click_markers(self, figsize=(20, 8)):
-        """
-        Демонстрация маркеров дефекта click.
-
-        :param figsize: Размер картинки.
-        """
-
-        markers = self.get_defect_click_markers()
-        wi_utils.show_graph(markers, figsize=figsize, title='Defect Click Markers')
 
     # ----------------------------------------------------------------------------------------------
 
@@ -419,25 +378,6 @@ class Channel:
 
         # print(res)
         return res
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_click(self, defects):
-        """
-        Получение дефектов click.
-
-        :param defects: Список дефектов.
-        """
-
-        markers = self.get_defect_click_markers()
-        ivs = wi_utils.markers_true_intervals(markers)
-
-        for iv in ivs:
-            defects.append(defect_descr(self.Parent.FileName,
-                                        self.Channel,
-                                        'click',
-                                        self.specpos_to_time(iv[0]),
-                                        self.specpos_to_time(iv[1])))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -707,18 +647,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_click(self, defects):
-        """
-        Получение маркеров дефекта click.
-
-        :param defects: Список дефектов.
-        """
-
-        for ch in self.Channels:
-            ch.get_defects_click(defects)
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defects_click2(self, defects):
         """
         Получение маркеров дефекта click2.
@@ -776,8 +704,6 @@ class WAV:
         :param defects:       Список дефектов.
         """
 
-        if 'click' in defects_names:
-            self.get_defects_click(defects)
         if 'click2' in defects_names:
             self.get_defects_click2(defects)
         if 'deaf' in defects_names:
@@ -861,7 +787,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['click2'])
+        defects_names=['click2', 'deaf'])
 
 
 # ==================================================================================================
