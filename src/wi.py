@@ -1020,12 +1020,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=[
-            'click',
-            'deaf',
-            'echo',
-            'asnc'
-        ])
+        defects_names=['click', 'deaf', 'asnc'])
 
 
 # ==================================================================================================
