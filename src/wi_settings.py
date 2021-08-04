@@ -97,6 +97,51 @@ class DefectDeaf2Settings:
 # ==================================================================================================
 
 
+class DefectEchoSettings:
+    """
+    Настройки дефекта echo.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 w_corr,
+                 shift_cor,
+                 start_skan,
+                 skip_skan,
+                 long_skan,
+                 start_range_frames,
+                 range_frames,
+                 times_echo,
+                 cor_lim):
+
+        """
+        Конструктор.
+
+        :param w_corr: Ширина сканирующего окна.
+        :param shift_cor:     Шаг смещения окна звука - образца, от которого идет поиск эхо.
+        :param start_skan:  Начальное смещение сканирующих окон эхо от образца.
+        :param skip_skan:    Количество первых сканов, которые необходимо пропустить,
+         чтобы не детектировать протяжные звуки.
+        :param long_skan:   Ограничитель поиска эхо по времени записи (величина задается в количестве фреймов).
+        :param start_range_frames: Указывает сколько нижних амплитуд не учитывать
+        :param range_frames: Указывает верхний порог амплитуд
+        :param times_echo:  Количество повторений эхо для детектирования феномена
+        :param cor_lim: Лимит корреляции для детектирования эффекта
+        """
+        self.WCorr = w_corr
+        self.ShiftCor = shift_cor
+        self.StartSkan = start_skan
+        self.SkipSkan = skip_skan
+        self.LongSkan = long_skan
+        self.StartRangeFrames = start_range_frames
+        self.RangeFrames = range_frames
+        self.TimesEcho = times_echo
+        self.CorLim = cor_lim
+
+# ==================================================================================================
+
+
 class DefectCometSettings:
     """
     Настройки дефекта comet.
@@ -155,6 +200,7 @@ class DefectsSettings:
                  deaf,
                  deaf2,
                  comet,
+                 echo,
                  asnc):
         """
         Конструктор настроек для всех дефектов.
@@ -165,6 +211,7 @@ class DefectsSettings:
         :param deaf:      Настройки дефекта deaf.
         :param deaf2:     Настройки дефекта deaf2.
         :param comet:     Настройки дефекта comet.
+        :param echo:      Настройки дефекта echo.
         :param asnc:      Настрйоки дефекта asnc.
         """
 
@@ -173,6 +220,7 @@ class DefectsSettings:
         self.Deaf = deaf
         self.Deaf2 = deaf2
         self.Comet = comet
+        self.Echo = echo
         self.Asnc = asnc
 
 # ==================================================================================================
@@ -197,6 +245,16 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
+defect_echo_settings = DefectEchoSettings(w_corr=3,
+                                          shift_cor=1,
+                                          start_skan=1,
+                                          skip_skan=2,
+                                          long_skan=50,
+                                          start_range_frames=5,
+                                          range_frames=650,
+                                          times_echo=2,
+                                          cor_lim=0.88)
+
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
@@ -204,6 +262,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
                                    comet=defect_comet_settings,
+                                   echo=defect_echo_settings,
                                    asnc=defect_asnc_settings)
 
 # ==================================================================================================
