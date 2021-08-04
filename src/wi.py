@@ -510,6 +510,199 @@ class Channel:
                                         self.specpos_to_time(iv[0]),
                                         self.specpos_to_time(iv[1])))
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_echo(self, defects):
+        """
+        Получение дефектов echo.
+
+        :param defects: Список дефектов.
+        """
+
+        s = self.Parent.Settings.Echo
+
+        # матрица для записи в нее результатов корреляции
+        cor = []
+
+        # список фреймов с эхо
+        frame_time = []
+
+        # спект амплитуд
+        stft = self.ASpectre
+
+        # врезаем тишину библиотекой Либроса
+        # выдает номера семплов начала и конца звука, тишину выкидывает
+        semp = librosa.effects.split(y=self.Y, top_db=s.TopDbForSilence)
+
+        # перевод семпла в фрейм
+        s_frames = librosa.samples_to_frames(semp, hop_length=512)
+
+        new_stft = []
+        vois = []
+
+        # аписываем все номера фреймов со звуком
+        for ff in s_frames:
+
+            for nf in range(ff[0], ff[-1]):
+                vois.append(nf)
+
+        #  формируем булевый аналог
+        for fi in range(len(self.ASpectre.T)):
+
+            if fi in vois:
+
+                new_stft.append(1)
+
+            else:
+
+                new_stft.append(0)
+
+        # обнуляем все тихие места
+        stft = np.multiply(self.ASpectre, new_stft)
+
+        # выбор исследуемой области (ограничитель исследуемых частот)
+        stft = stft[s.StartRangeFrames:s.RangeFrames]
+
+        # транспонированная матрица для последующей работы c фреймами, а не с амплииткдами
+        stft_t = stft.T
+
+        # формирование сканирующих окон - начало цикла поиска эхо
+        # цикл выбора исходного окна, с которым происходит сравнение
+        for i in range(0, len(stft_t), s.ShiftCor):
+
+            # если значение превышает размер матрици, закончить цикл
+            if i + s.WCorr > len(stft_t):
+                break
+
+            # запись исходного окна для последующего анализа
+            seq0 = stft_t[i : i + s.WCorr]
+
+            # вытягивание матриц в вектор для корреляции
+            seq0 = seq0.reshape((seq0.shape[0] * seq0.shape[1]))
+
+            # проверка убывания эхо
+            magnitude = []
+            # фиксируем величину вектора образца
+            magn_val_start = np.sqrt(seq0.dot(seq0))
+
+            # количество окон для анализа
+            num_wind = s.TimesEcho
+
+            # цикл поиска повторений
+            for j in range(s.StartSkan, s.LongSkan + s.StartSkan):
+
+                # если кол-во повторений эхо упало ниже, прервать цикл
+                if num_wind < s.TimesEcho:
+                    break
+
+                # проверка границ массива
+                if i + j + s.WCorr > len(stft_t):
+                    break
+
+                # пропуск первых повторений
+                if j <= s.SkipSkan:
+                    continue
+
+                # цикл формирования сканирующих окон
+                for n in range(1, num_wind + 1):
+
+                    # если последнее окно вышло за пределы строки
+                    # сократить количество окон
+                    if i + j * n + s.WCorr > len(stft_t):
+                        num_wind -= 1
+                        n -= 1
+                        break
+
+                    # записываем сканирующее окно для корелляции с исходным
+                    seq_skan = stft_t[int(i + j * n):int(i + j * n + s.WCorr)]
+
+                    # вытягивание матриц в вектор для корреляции
+                    seq_skan = seq_skan.reshape((seq_skan.shape[0] * seq_skan.shape[1]))
+
+                    # проверка убывания эхо
+                    magnitude_skan = np.sqrt(seq_skan.dot(seq_skan))
+                    magnitude.append(magnitude_skan)
+
+                    # если анализируется тишина
+                    if magnitude_skan == 0 or magn_val_start == 0:
+                        cor = []
+                        magnitude = []
+                        break
+
+                    # сравнение матриц - корреляция
+                    result = sp.stats.pearsonr(seq0, seq_skan)
+
+                    # записываем результат для анализа
+                    cor.append(round(result[0], 3))
+
+                # конец одного шага сканирования
+                # анализируем результаты
+
+                # если cor пустой, пропустить шаг
+                if cor == [] or len(cor) < s.TimesEcho:
+
+                    # обнуляем матрицу с результатами для нового цикла
+                    cor = []
+                    magnitude = []
+                    continue
+
+                # преобразование в матрицу
+                cor = np.array(cor)
+
+                # поиск эхо
+                cor = cor >= s.CorLim
+
+                # если это эхо, то записать номера фреймов
+                if all(cor):
+
+                    # проверка убывания эхо
+                    # флаг: если 1, то зафиксировано убывание вектора - свойство затухания повторений эхо
+                    ponigenie = 1
+
+                    for num_d, val_d in enumerate(magnitude):
+
+                        # первое сравнение происходит с исходным звуком
+                        if num_d == 0:
+                            step1 = magn_val_start
+
+                        # сравниваем со значением сканирующего окна
+                        step2 = val_d
+
+                        # если результат положительный
+                        # перезаписываем первую переменную
+                        # для последующих сравнений с текущими окнами
+                        if step2 <= step1:
+                            step1 = step2
+
+                        else:
+                            ponigenie = 0
+
+                    if ponigenie == 0:
+
+                        # обнуляем матрицу с результатами для нового цикла
+                        cor = []
+                        magnitude = []
+                        continue
+
+                    frame_time.append([i,  # фрейм начала события
+                                       i + j * n + s.WCorr])  # фрейм конца события
+
+                # обнуляем матрицу с результатами для нового цикла
+                cor = []
+                magnitude = []
+
+        # конец цикла поиска повторений
+        # обработка результатов
+
+        # проверка наличия эхо
+        if len(frame_time) != 0:
+
+            defects.append(defect_descr(self.Parent.FileName,
+                                        self.Channel,
+                                        'echo',
+                                        round(librosa.frames_to_time(frame_time[0][0], sr=self.Parent.SampleRate, hop_length=512), 2),
+                                        round(librosa.frames_to_time(frame_time[-1][-1], sr=self.Parent.SampleRate, hop_length=512), 2)))
+
 # ==================================================================================================
 
 
@@ -680,6 +873,19 @@ class WAV:
         for ch in self.Channels:
             ch.get_defects_deaf2(defects)
 
+        # ----------------------------------------------------------------------------------------------
+
+    def get_defects_echo(self, defects):
+
+        """
+        Получение маркеров дефекта echo.
+
+        :param defects: Список дефектов.
+        """
+
+        for ch in self.Channels:
+            ch.get_defects_echo(defects)
+
     # ----------------------------------------------------------------------------------------------
 
     def get_defects_comet(self, defects):
@@ -734,6 +940,8 @@ class WAV:
             self.get_defects_deaf2(defects)
         if 'comet' in defects_names:
             self.get_defects_comet(defects)
+        if 'echo' in defects_names:
+            self.get_defects_echo(defects)
         if 'asnc' in defects_names:
             self.get_defects_asnc(defects)
 
@@ -812,7 +1020,12 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf', 'asnc'])
+        defects_names=[
+            'click',
+            'deaf',
+            'echo',
+            'asnc'
+        ])
 
 
 # ==================================================================================================

@@ -113,7 +113,8 @@ class DefectEchoSettings:
                  start_range_frames,
                  range_frames,
                  times_echo,
-                 cor_lim):
+                 cor_lim,
+                 top_db_for_silence):
 
         """
         Конструктор.
@@ -128,7 +129,9 @@ class DefectEchoSettings:
         :param range_frames: Указывает верхний порог амплитуд
         :param times_echo:  Количество повторений эхо для детектирования феномена
         :param cor_lim: Лимит корреляции для детектирования эффекта
+        param top_db_for_silence: порог db для поиска тишины
         """
+
         self.WCorr = w_corr
         self.ShiftCor = shift_cor
         self.StartSkan = start_skan
@@ -138,6 +141,7 @@ class DefectEchoSettings:
         self.RangeFrames = range_frames
         self.TimesEcho = times_echo
         self.CorLim = cor_lim
+        self.TopDbForSilence = top_db_for_silence
 
 # ==================================================================================================
 
@@ -245,15 +249,16 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
-defect_echo_settings = DefectEchoSettings(w_corr=3,
+defect_echo_settings = DefectEchoSettings(w_corr=4,
                                           shift_cor=1,
                                           start_skan=1,
-                                          skip_skan=2,
-                                          long_skan=50,
-                                          start_range_frames=5,
+                                          skip_skan=4,
+                                          long_skan=20,
+                                          start_range_frames=16,
                                           range_frames=650,
                                           times_echo=2,
-                                          cor_lim=0.88)
+                                          cor_lim=0.88,
+                                          top_db_for_silence=35)
 
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 
