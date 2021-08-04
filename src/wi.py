@@ -80,7 +80,8 @@ class Channel:
         """
 
         # Генерируем спектр.
-        self.Spectre = librosa.amplitude_to_db(abs(librosa.stft(self.Y, n_fft=2048)))
+        self.ASpectre = abs(librosa.stft(self.Y, n_fft=2048)) # для эхо
+        self.Spectre = librosa.amplitude_to_db(self.ASpectre)
         self.TSpectre = self.Spectre.transpose()
 
         # Нормализуем матрицу спектра.
