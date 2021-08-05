@@ -191,6 +191,29 @@ class DefectAsncSettings:
 # ==================================================================================================
 
 
+class DefectHumSettings:
+    """
+    Настройки дефекта hum.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 lo_ignore,
+                 thr):
+        """
+        Конструктор.
+
+        :param lo_ignore: Нижняя граница игнорирования частот (в процентах).
+        :param thr:       Порог скачка разницы оригинального и сглаженного отношений квантилей.
+        """
+
+        self.LoIgnore = lo_ignore
+        self.Thr = thr
+
+# ==================================================================================================
+
+
 class DefectsSettings:
     """
     Настройки дефектов.
@@ -205,7 +228,8 @@ class DefectsSettings:
                  deaf2,
                  comet,
                  echo,
-                 asnc):
+                 asnc,
+                 hum):
         """
         Конструктор настроек для всех дефектов.
 
@@ -217,6 +241,7 @@ class DefectsSettings:
         :param comet:     Настройки дефекта comet.
         :param echo:      Настройки дефекта echo.
         :param asnc:      Настрйоки дефекта asnc.
+        :param hum:       Настройки дефекта hum.
         """
 
         self.LimitsDb = limits_db
@@ -226,6 +251,7 @@ class DefectsSettings:
         self.Comet = comet
         self.Echo = echo
         self.Asnc = asnc
+        self.Hum = hum
 
 # ==================================================================================================
 
@@ -262,12 +288,16 @@ defect_echo_settings = DefectEchoSettings(w_corr=4,
 
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 
+defect_hum_settings = DefectHumSettings(lo_ignore=10.0,
+                                        thr=0.5)
+
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
                                    comet=defect_comet_settings,
                                    echo=defect_echo_settings,
-                                   asnc=defect_asnc_settings)
+                                   asnc=defect_asnc_settings,
+                                   hum=defect_hum_settings)
 
 # ==================================================================================================

@@ -703,6 +703,38 @@ class Channel:
                                         round(librosa.frames_to_time(frame_time[0][0], sr=self.Parent.SampleRate, hop_length=512), 2),
                                         round(librosa.frames_to_time(frame_time[-1][-1], sr=self.Parent.SampleRate, hop_length=512), 2)))
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_hum(self, defects):
+        """
+        Получение дефектов hum.
+
+        :param defects: Список дефектов.
+        """
+
+        s = self.Parent.Settings.Hum
+
+        # Отрезаем совсем нижние частоты.
+        h = self.H[int((s.LoIgnore / 100.0) * len(self.H)):]
+        r = [0] * len(h)
+
+        # Номера квантилей не передаются через настройки, это magic numbers,
+        # как и параметры сглаживания.
+
+        for i in range(len(r)):
+            hi = h[i]
+            hi.sort()
+            q55 = hi[55 * len(hi) // 100]
+            if q55 > 0.0:
+                r[i] = hi[len(hi) // 10] / q55
+
+        rsm = sp.signal.savgol_filter(r, 15, 3)
+        d = r - rsm
+
+        if d.max() > s.Thr:
+            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
+                            'name': 'hum', 'beg': 0.0, 'end': self.Parent.Duration})
+
 # ==================================================================================================
 
 
@@ -965,6 +997,30 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_hum(self, defects):
+        """
+        Получение дефектов hum.
+
+        :param defects: Список дефектов.
+        """
+
+        # Определение дефекта гула на некоторой частоте должно определятся
+        # на достаточно продолжительном участке записи (не менее 15 секунд).
+        # Характеризуется отношением 10-го и 55-го квантилей сигнала на спектрограмме.
+        # Скачок разности оригинального и сглаженного отношения сигнализирует о гуле.
+        # Сглаживание выполняется с помощью кубического фильтра Савицкого-Голея
+        # (можно попробовать простую усредняющую свертку, хотя бы из соображений скорости).
+        #
+        # Источник:
+        # Matthias Brandt, Joerg Bitzer.
+        # Automatic detection of hum in audio signals.
+        # J. Audio Eng. Socc., Vol. 62, No. 9, 2014, September.
+
+        for ch in self.Channels:
+            ch.get_defects_hum(defects)
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects(self, defects_names, defects):
         """
         Получение списка дефектов по списку имен дефектов.
@@ -985,6 +1041,8 @@ class WAV:
             self.get_defects_echo(defects)
         if 'asnc' in defects_names:
             self.get_defects_asnc(defects)
+        if 'hum' in defects_names:
+            self.get_defects_hum(defects)
 
 # ==================================================================================================
 
@@ -1068,7 +1126,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf', 'asnc'])
+        defects_names=['click', 'deaf', 'asnc', 'hum'])
 
 
 # ==================================================================================================
