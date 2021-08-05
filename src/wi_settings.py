@@ -249,16 +249,16 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
-defect_echo_settings = DefectEchoSettings(w_corr=4,
+defect_echo_settings = DefectEchoSettings(w_corr=5,
                                           shift_cor=1,
                                           start_skan=1,
-                                          skip_skan=4,
-                                          long_skan=20,
+                                          skip_skan=3,
+                                          long_skan=17,
                                           start_range_frames=16,
                                           range_frames=650,
                                           times_echo=2,
-                                          cor_lim=0.88,
-                                          top_db_for_silence=35)
+                                          cor_lim=0.89,
+                                          top_db_for_silence=32)
 
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 
