@@ -332,6 +332,53 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def music_detect_vois(self):
+        """
+
+        """
+
+        S_full, phase = librosa.magphase(librosa.stft(self.Y))
+
+        S_filter = librosa.decompose.nn_filter(S_full,
+                                               aggregate=np.median,
+                                               metric='cosine',
+                                               width=int(librosa.time_to_frames(2, sr=self.Parent.SampleRate)))
+
+        S_filter = np.minimum(S_full, S_filter)
+
+        margin_v = 10
+        power = 2
+
+        mask_v = librosa.util.softmask(S_full - S_filter,
+                                       margin_v * S_filter,
+                                       power=power)
+
+        S_foreground = mask_v * S_full
+
+        stft = S_foreground * phase
+
+        y_foreground = librosa.istft(stft)
+
+        lim_percent = 80
+
+        lim_percent = len(self.Y)*lim_percent/100
+
+        semp = librosa.effects.split(y=y_foreground, top_db=35)
+
+        coin = 0
+
+        for c in semp:
+            for num in range(c[0], c[1]):
+                coin += 1
+
+        # если голоса больше порога, то
+        if coin >= lim_percent:
+            return True
+        else:
+            return False
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defect_comet_markers(self):
         """
         Получение маркеров дефекта comet.
@@ -540,7 +587,7 @@ class Channel:
         new_stft = []
         vois = []
 
-        # аписываем все номера фреймов со звуком
+        # описываем все номера фреймов со звуком
         for ff in s_frames:
 
             for nf in range(ff[0], ff[-1]):
@@ -1126,7 +1173,10 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf', 'asnc', 'hum'])
+        defects_names=[
+            # 'click', 'deaf', 'asnc', 'hum',
+            'echo'
+        ])
 
 
 # ==================================================================================================
