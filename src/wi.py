@@ -60,6 +60,7 @@ class Channel:
         self.Y = y
 
         # Исходный и транспонированный спектр, который строит librosa.
+        self.ASpectre = None
         self.Spectre = None
         self.TSpectre = None
 
@@ -332,9 +333,18 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def music_detect_vois(self):
+    def music_to_voice(self,
+                   margin_v=5,
+                   power=2,
+                   lim_percent=90,
+                   top_db=35):
         """
+        разделяет аудиозапись на музыку и голос.
 
+        :param margin_v=5: Множетель фильтра шумов.
+        :param power:  Число мощности для выделения маски (>0, целое).
+        :param lim_percent: лимит голоса в записи в процентах (от 0 до 100)
+        :param top_db: предел громкости для отсеивания тишины
         """
 
         S_full, phase = librosa.magphase(librosa.stft(self.Y))
@@ -346,8 +356,8 @@ class Channel:
 
         S_filter = np.minimum(S_full, S_filter)
 
-        margin_v = 10
-        power = 2
+        margin_v = margin_v
+        power = power
 
         mask_v = librosa.util.softmask(S_full - S_filter,
                                        margin_v * S_filter,
@@ -357,13 +367,15 @@ class Channel:
 
         stft = S_foreground * phase
 
+        # в записи оставили только голос
         y_foreground = librosa.istft(stft)
 
-        lim_percent = 80
+        lim_percent = lim_percent
 
         lim_percent = len(self.Y)*lim_percent/100
 
-        semp = librosa.effects.split(y=y_foreground, top_db=35)
+        # из голоса вырезаем тишину
+        semp = librosa.effects.split(y=y_foreground, top_db=top_db)
 
         coin = 0
 
@@ -374,6 +386,8 @@ class Channel:
         # если голоса больше порога, то
         if coin >= lim_percent:
             return True
+
+        # если голоса осталось мало
         else:
             return False
 
@@ -401,7 +415,6 @@ class Channel:
     def get_silence2(self, x, limx = 0.02, hop_length=512, Xdb=None):
 
         '''
-
         :param x: аудиозапись
         :param limx: предел амплитуды для однаружения тишины
         :param hop_length: ширина одно фрейма
@@ -594,7 +607,7 @@ class Channel:
                 vois.append(nf)
 
         #  формируем булевый аналог
-        for fi in range(len(self.ASpectre.T)):
+        for fi in range(len(stft.T)):
 
             if fi in vois:
 
@@ -605,7 +618,7 @@ class Channel:
                 new_stft.append(0)
 
         # обнуляем все тихие места
-        stft = np.multiply(self.ASpectre, new_stft)
+        stft = np.multiply(stft, new_stft)
 
         # выбор исследуемой области (ограничитель исследуемых частот)
         stft = stft[s.StartRangeFrames:s.RangeFrames]
@@ -1174,8 +1187,7 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
         defects_names=[
-            # 'click', 'deaf', 'asnc', 'hum',
-            'echo'
+            'click', 'deaf', 'asnc', 'hum',
         ])
 
 
