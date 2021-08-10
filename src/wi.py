@@ -334,10 +334,10 @@ class Channel:
     # ----------------------------------------------------------------------------------------------
 
     def music_to_voice(self,
-                   margin_v=5,
-                   power=2,
-                   lim_percent=90,
-                   top_db=35):
+                   margin_v=11.75,
+                   power=3,
+                   lim_percent=24,
+                   top_db=34):
         """
         разделяет аудиозапись на музыку и голос.
 
@@ -347,12 +347,22 @@ class Channel:
         :param top_db: предел громкости для отсеивания тишины
         """
 
-        S_full, phase = librosa.magphase(librosa.stft(self.Y))
+        # убираем тишину и формируем семпл без тишины
+        semp = librosa.effects.split(y=self.Y, top_db=top_db)
+
+        index_semp = []
+        for seq in semp:
+            index_semp += [i for i in range(seq[0], seq[-1])]
+
+        # новый семпл без тишины
+        y = y[index_semp]
+
+        S_full, phase = librosa.magphase(librosa.stft(y))
 
         S_filter = librosa.decompose.nn_filter(S_full,
                                                aggregate=np.median,
                                                metric='cosine',
-                                               width=int(librosa.time_to_frames(2, sr=self.Parent.SampleRate)))
+                                               )
 
         S_filter = np.minimum(S_full, S_filter)
 
