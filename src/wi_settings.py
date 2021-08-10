@@ -237,6 +237,29 @@ class DefectHumSettings:
 # ==================================================================================================
 
 
+class DefectSaturSettings:
+    """
+    Настройки дефекта satur.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 filter_width,
+                 power_thr):
+        """
+        Конструктор.
+
+        :param filter_width: Ширина фильтра.
+        :param power_thr:    Порог сигнала.
+        """
+
+        self.FilterWidth = filter_width
+        self.PowerThr = power_thr
+
+# ==================================================================================================
+
+
 class DefectsSettings:
     """
     Настройки дефектов.
@@ -253,7 +276,8 @@ class DefectsSettings:
                  echo,
                  asnc,
                  diff,
-                 hum):
+                 hum,
+                 satur):
         """
         Конструктор настроек для всех дефектов.
 
@@ -267,6 +291,7 @@ class DefectsSettings:
         :param asnc:      Настрйоки дефекта asnc.
         :param diff:      Настройки дефекта diff.
         :param hum:       Настройки дефекта hum.
+        :param satur:     Настройки дефекта satur.
         """
 
         self.LimitsDb = limits_db
@@ -278,6 +303,7 @@ class DefectsSettings:
         self.Asnc = asnc
         self.Diff = diff
         self.Hum = hum
+        self.Satur = satur
 
 # ==================================================================================================
 
@@ -320,6 +346,9 @@ defect_diff_settings = DefectDiffSettings(width_min=10,
 defect_hum_settings = DefectHumSettings(lo_ignore=10.0,
                                         thr=0.5)
 
+defect_satur_settings = DefectSaturSettings(filter_width=32,
+                                            power_thr=0.2)
+
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
                                    deaf=defect_deaf_settings,
@@ -328,6 +357,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    echo=defect_echo_settings,
                                    asnc=defect_asnc_settings,
                                    diff=defect_diff_settings,
-                                   hum=defect_hum_settings)
+                                   hum=defect_hum_settings,
+                                   satur=defect_satur_settings)
 
 # ==================================================================================================

@@ -6,6 +6,8 @@ import os
 import time
 import itertools
 import pathlib
+
+import scipy.ndimage
 import sklearn
 import numpy as np
 import scipy as sp
@@ -805,6 +807,26 @@ class Channel:
             defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
                             'name': 'hum', 'beg': 0.0, 'end': self.Parent.Duration})
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_satur(self, defects):
+        """
+        Получение дефектов satur.
+
+        :param defects: Список дефектов.
+        """
+
+        r = librosa.feature.rms(S=self.ASpectre)[0]
+        rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.Satur.FilterWidth)
+        m = [(rsi > self.Parent.Settings.Satur.PowerThr) for rsi in rs]
+        intervals = wi_utils.markers_true_intervals(m)
+
+        for interval in intervals:
+            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
+                            'name': 'satur',
+                            'beg': self.specpos_to_time(interval[0]),
+                            'end': self.specpos_to_time(interval[1])})
+
 # ==================================================================================================
 
 
@@ -1120,6 +1142,22 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_satur(self, defects):
+        """
+        Получение дефектов satur.
+
+        :param defects: Список дефектов.
+        """
+
+        # Определение дефекта saturation (перегрузка).
+        # Выполняется поиск участков, в которых превышен порог по энергии звука,
+        # полученной по спектрограмме амплидуд.
+
+        for ch in self.Channels:
+            ch.get_defects_satur(defects)
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects(self, defects_names, defects):
         """
         Получение списка дефектов по списку имен дефектов.
@@ -1144,6 +1182,8 @@ class WAV:
             self.get_defects_diff(defects)
         if 'hum' in defects_names:
             self.get_defects_hum(defects)
+        if 'satur' in defects_names:
+            self.get_defects_satur(defects)
 
 # ==================================================================================================
 
@@ -1227,6 +1267,7 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=['click', 'deaf', 'asnc', 'diff', 'hum'])
+        defects_names=['click', 'deaf', 'asnc', 'diff', 'hum', 'satur'])
+
 
 # ==================================================================================================
