@@ -191,6 +191,29 @@ class DefectAsncSettings:
 # ==================================================================================================
 
 
+class DefectDiffSettings:
+    """
+    Настройки дефекта diff.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 width_min,
+                 thr):
+        """
+        Конструктор.
+
+        :param width: Ширина окна для взятия минимума разницы.
+        :param thr:   Порог определения дефекта.
+        """
+
+        self.WidthMin = width_min
+        self.Thr = thr
+
+# ==================================================================================================
+
+
 class DefectHumSettings:
     """
     Настройки дефекта hum.
@@ -229,6 +252,7 @@ class DefectsSettings:
                  comet,
                  echo,
                  asnc,
+                 diff,
                  hum):
         """
         Конструктор настроек для всех дефектов.
@@ -241,6 +265,7 @@ class DefectsSettings:
         :param comet:     Настройки дефекта comet.
         :param echo:      Настройки дефекта echo.
         :param asnc:      Настрйоки дефекта asnc.
+        :param diff:      Настройки дефекта diff.
         :param hum:       Настройки дефекта hum.
         """
 
@@ -251,6 +276,7 @@ class DefectsSettings:
         self.Comet = comet
         self.Echo = echo
         self.Asnc = asnc
+        self.Diff = diff
         self.Hum = hum
 
 # ==================================================================================================
@@ -288,6 +314,9 @@ defect_echo_settings = DefectEchoSettings(w_corr=5,
 
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 
+defect_diff_settings = DefectDiffSettings(width_min=10,
+                                          thr=0.1)
+
 defect_hum_settings = DefectHumSettings(lo_ignore=10.0,
                                         thr=0.5)
 
@@ -298,6 +327,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    comet=defect_comet_settings,
                                    echo=defect_echo_settings,
                                    asnc=defect_asnc_settings,
+                                   diff=defect_diff_settings,
                                    hum=defect_hum_settings)
 
 # ==================================================================================================

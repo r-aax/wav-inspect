@@ -1022,7 +1022,7 @@ class WAV:
 
     def get_defects_asnc(self, defects):
         """
-        Получение маркеров дефекта asnc.
+        Получение дефектов asnc.
 
         :param defects: Список дефектов.
         """
@@ -1053,7 +1053,36 @@ class WAV:
             # Вместо номера канала ставим 2,
             # так как дефект не относится к какому-то одному каналу.
             defects.append({'rec': self.FileName, 'ch': 2,
-                            'name': 'async', 'beg': 0.0, 'end': self.Duration})
+                            'name': 'asnc', 'beg': 0.0, 'end': self.Duration})
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_diff(self, defects):
+        """
+        Получение дефектов diff.
+
+        :param defects: Список дефектов.
+        """
+
+        # Определение дефекта слишком значимого расхождения каналов
+        # по среднему значению силы сигнала на спектрограмме.
+        # Помогает отследить, например, резкое выпадение звука на одном из каналов,
+        # рассинхронизацию и другие значительные отклонения в звучании каналов.
+        # Работает с нормализованной спектрограммой.
+
+        m0 = np.array([vi.mean() for vi in self.ch0().V])
+        m1 = np.array([vi.mean() for vi in self.ch1().V])
+        d = np.abs(m0 - m1)
+        r = sp.ndimage.minimum_filter1d(d, self.Settings.Diff.WidthMin)
+
+        # Не ищем точное место превышения порога, так как запись нужно резать на части
+        # продолжительностью несколько секунд и искать дефект отдельно по каждой из них.
+
+        if r.max() > self.Settings.Diff.Thr:
+            # Вместо номера канала ставим 2,
+            # так как дефект не относится к какому-то одному каналу.
+            defects.append({'rec': self.FileName, 'ch': 2,
+                            'name': 'diff', 'beg': 0.0, 'end': self.Duration})
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1101,6 +1130,8 @@ class WAV:
             self.get_defects_echo(defects)
         if 'asnc' in defects_names:
             self.get_defects_asnc(defects)
+        if 'diff' in defects_names:
+            self.get_defects_diff(defects)
         if 'hum' in defects_names:
             self.get_defects_hum(defects)
 
@@ -1186,9 +1217,6 @@ if __name__ == '__main__':
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=[
-            'click', 'deaf', 'asnc', 'hum',
-        ])
-
+        defects_names=['click', 'deaf', 'asnc', 'diff', 'hum'])
 
 # ==================================================================================================
