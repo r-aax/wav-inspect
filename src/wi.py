@@ -454,6 +454,146 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_volume_level(self,
+                         Tg = 0.4, # 400 мс
+                         T_itr = 10, # количество строблений
+                         ):
+
+        '''
+
+        :param Tg: Размер стробления (сек).
+        :param T_itr: Количество строблений на участке Т.
+
+        :return: Список громкости звука на участках длиной Т.
+        '''
+
+        T = round(T_itr*0.1+Tg-0.1, 1)
+
+        x, sr = librosa.load(self.FileName, mono=False, sr=48000)
+
+        # К-фильтр частот
+        # коэф-ты при sr = 48000:
+        a1 = 1.69065929318241 * (-1)
+        a2 = 0.73248077421585
+        b0 = 1.53512485958697
+        b1 = 2.69169618940638 * (-1)
+        b2 = 1.19839281085285
+
+        # цифровой биквадратный блок
+        # через каскадное включение
+        # рекурсивного и нерекурсивного фильтров
+        y = []
+        for xi in x[:5]:
+
+            # промежуточный сигнал
+            wi = []
+
+            # итоговый сигнал
+            yi = []
+
+            # включение рекурсивного фильтра
+            for num, val in enumerate(xi):
+                if num <= 1:
+                    wi.append(val)  # val или 0
+                else:
+                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
+
+            # включение нерекурсивного фильтра
+            for numw, valw in enumerate(wi):
+                if numw <= 1:
+                    yi.append(valw)  # val или 0
+                else:
+                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
+
+            y.append(yi)
+
+        y = np.array(y)
+
+        # К-фильтр частот
+        # коэф-ты при sr = 48000:
+        a1 = 1.99004745483398 * (-1)
+        a2 = 0.99007225036621
+        b0 = 1.0
+        b1 = 2.0 * (-1)
+        b2 = 1.0
+
+        x = y
+
+        # цифровой биквадратный блок
+        # через каскадное включение
+        # рекурсивного и нерекурсивного фильтров
+        y = []
+        for xi in x[:5]:
+
+            # промежуточный сигнал
+            wi = []
+
+            # итоговый сигнал
+            yi = []
+
+            # включение рекурсивного фильтра
+            for num, val in enumerate(xi):
+                if num <= 1:
+                    wi.append(val)  # val или 0
+                else:
+                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
+
+            # включение нерекурсивного фильтра
+            for numw, valw in enumerate(wi):
+                if numw <= 1:
+                    yi.append(valw)  # val или 0
+                else:
+                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
+
+            y.append(yi)
+
+        y = np.array(y)
+
+        # среднеквадратичное значение
+
+        # Энергия j-го стробирующего блока по каналам
+        zij = [[], []]
+
+        # дважды отфильтрованный сигнал разбиваем на два канала
+        for zni, zi in enumerate(y):
+
+            # канал разбиваем на Т-интерваллы (без хвоста)
+
+            step_seg = int(sr * T)
+            segments = np.array([zi[i:i + step_seg] for i in range(0, len(zi), int(step_seg))])
+            if len(segments[-1]) < step_seg:
+                segments = segments[:-1]
+
+            # Т-интерваллы (каждый) разбиваем на Тg-интерваллы с перекрытием в 75%
+            for T_int in segments:
+
+                step_seg = int(sr * Tg)
+                segments_Tg = [T_int[i:i+step_seg] for i in range(0, T_itr*int(step_seg/4), int(step_seg/4))]
+
+                # вычисляем энергию каждого Tg-интервала
+                for Tg_int in segments_Tg:
+                    zj = (1 / len(Tg_int)) * sum(Tg_int * Tg_int)
+
+                    zij[zni].append(zj)
+
+        G = [1, 1, 1, 1.41, 1.41]  # весовые коэф-ты каналов
+
+        # Стробированная громкость в интервале измерения T
+        lkg = []
+
+        for tj in range(len(segments_T)):
+
+            sumij = []
+
+            for ti in range(len(y)):
+                sumij.append(G[ti] * (sum(zij[ti][tj * T_itr:tj * T_itr + T_itr]) / T_itr))
+
+            lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
+
+        return lkg
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_click(self, defects):
         """
         Получение дефектов click.
