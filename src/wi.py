@@ -735,7 +735,6 @@ class Channel:
 
         # матрица для записи в нее результатов корреляции
         cor = []
-        cor_gap = []
 
         # список фреймов с эхо
         frame_time = []
@@ -799,6 +798,7 @@ class Channel:
             magnitude = []
             # фиксируем величину вектора образца
             magn_val_start = np.sqrt(seq0.dot(seq0))
+            magn_val_qap = np.sqrt(seq0_gap.dot(seq0_gap))
 
             # если анализируется тишина
             if magn_val_start == 0:
@@ -819,8 +819,8 @@ class Channel:
                 if i + j + s.WCorr > len(stft_t):
                     break
 
-                # пропуск первых повторений
-                if j <= s.SkipSkan:
+                # пропуск первых повторений и ширины первого окна
+                if j <= s.SkipSkan:#+s.WCorr:
                     continue
 
                 # проверка гипотезы зазоров между эхо
@@ -830,22 +830,33 @@ class Channel:
                 # а если его там нет, то возможно это протяжный звук
                 # и искать дальше эхо нет смысла при данном i
                 # проверка проводится, если есть соразмерный зазор
-                if j - (i + s.WCorr) >= s.WCorr and j == 1:
+                if i+j - (i + s.WCorr) >= s.WCorr and j >= s.WCorr:
+                    # если анализируется тишина
+                    if magn_val_qap == 0:
+                        # переходим к следующему шагу
+                        continue
                     result_gap = scipy.stats.pearsonr(seq0, seq0_gap)
-                    if result_gap > cor_lim:
+                    if result_gap[0] >= s.CorLim:
+                        cor = []
                         # прервать цикл j, перейти к новому i
                         break
-                    # доп проверка: есть ли зазор между эхо
-                    # формируем зазор
-                    seq_skan_gap = stft_t[int(i + j * 1 + s.WCorr):int(i + j * 1 + s.WCorr + s.WCorr)]
-                    # ввытягиваем в вектор
-                    seq_skan_gap = seq_skan_gap.reshape((seq_skan_gap.shape[0] * seq_skan_gap.shape[1]))
-                    # корреляция зазора и исходного звука
-                    result_gap1 = scipy.stats.pearsonr(seq0, seq_skan_gap)
-                    # если больше лимита обнаружения, то это не пауза между эхо
-                    if result_gap1 > cor_lim:
-                        # прервать цикл j, перейти к новому i
-                        break
+                    # # доп проверка: есть ли зазор между эхо
+                    # # формируем зазор
+                    # seq_skan_gap = stft_t[int(i + j * 1 + s.WCorr):int(i + j * 1 + s.WCorr + s.WCorr)]
+                    # # ввытягиваем в вектор
+                    # seq_skan_gap = seq_skan_gap.reshape((seq_skan_gap.shape[0] * seq_skan_gap.shape[1]))
+                    # # корреляция зазора и исходного звука
+                    # result_gap1 = scipy.stats.pearsonr(seq0, seq_skan_gap)
+                    # # если больше лимита обнаружения, то это не пауза между эхо
+                    # if result_gap1[0] >= s.CorLim:
+                    #     cor = []
+                    #     # прервать цикл j, перейти к новому i
+                    #     break
+
+                # проверка гипотезы
+                # корреляция с шагом эхо затухает
+                # нужно проверять с предыдущим окном
+                seq_previous_step = seq0
 
                 # цикл формирования сканирующих окон
                 for n in range(1, num_wind + 1):
@@ -871,10 +882,17 @@ class Channel:
                     if magnitude_skan == 0 or magn_val_start == 0:
                         cor = []
                         magnitude = []
+                        # прервать цикл формирования окон и перейти к новому j
                         break
 
                     # сравнение матриц - корреляция
-                    result = sp.stats.pearsonr(seq0, seq_skan)
+                    result = sp.stats.pearsonr(seq_previous_step, seq_skan)
+
+                    # проверка гипотезы
+                    # корреляция с шагом эхо затухает
+                    # нужно проверять с предыдущим окном
+                    # перезапись предыдущего шага
+                    seq_previous_step = seq_skan
 
                     # записываем результат для анализа
                     cor.append(round(result[0], 3))
