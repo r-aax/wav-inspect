@@ -789,7 +789,7 @@ class Channel:
 
             # запись исходного окна для последующего анализа
             seq0 = stft_t[i : i + s.WCorr]
-            seq0_gap = stft_t[i + w_corr: i + w_corr + w_corr]
+            seq0_gap = stft_t[i + s.WCorr: i + s.WCorr + s.WCorr]
 
             # вытягивание матриц в вектор для корреляции
             seq0 = seq0.reshape((seq0.shape[0] * seq0.shape[1]))
@@ -830,14 +830,14 @@ class Channel:
                 # а если его там нет, то возможно это протяжный звук
                 # и искать дальше эхо нет смысла при данном i
                 # проверка проводится, если есть соразмерный зазор
-                if j - (i + w_corr) >= w_corr and j == 1:
+                if j - (i + s.WCorr) >= s.WCorr and j == 1:
                     result_gap = scipy.stats.pearsonr(seq0, seq0_gap)
                     if result_gap > cor_lim:
                         # прервать цикл j, перейти к новому i
                         break
                     # доп проверка: есть ли зазор между эхо
                     # формируем зазор
-                    seq_skan_gap = stft_t[int(i + j * 1 + w_corr):int(i + j * 1 + w_corr + w_corr)]
+                    seq_skan_gap = stft_t[int(i + j * 1 + s.WCorr):int(i + j * 1 + s.WCorr + s.WCorr)]
                     # ввытягиваем в вектор
                     seq_skan_gap = seq_skan_gap.reshape((seq_skan_gap.shape[0] * seq_skan_gap.shape[1]))
                     # корреляция зазора и исходного звука
@@ -1440,8 +1440,8 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
         defects_names=[
-            'click', 'deaf', 'asnc', 'diff', 'hum', 'satur'
-            # 'echo'
+            # 'click', 'deaf', 'asnc', 'diff', 'hum', 'satur'
+            'echo'
         ])
 
 
