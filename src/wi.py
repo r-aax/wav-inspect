@@ -840,18 +840,25 @@ class Channel:
                         cor = []
                         # прервать цикл j, перейти к новому i
                         break
-                    # # доп проверка: есть ли зазор между эхо
-                    # # формируем зазор
-                    # seq_skan_gap = stft_t[int(i + j * 1 + s.WCorr):int(i + j * 1 + s.WCorr + s.WCorr)]
-                    # # ввытягиваем в вектор
-                    # seq_skan_gap = seq_skan_gap.reshape((seq_skan_gap.shape[0] * seq_skan_gap.shape[1]))
-                    # # корреляция зазора и исходного звука
-                    # result_gap1 = scipy.stats.pearsonr(seq0, seq_skan_gap)
-                    # # если больше лимита обнаружения, то это не пауза между эхо
-                    # if result_gap1[0] >= s.CorLim:
-                    #     cor = []
-                    #     # прервать цикл j, перейти к новому i
-                    #     break
+
+                    # доп проверка: есть ли зазор между эхо
+                    # формируем зазор
+                    seq_skan_gap = stft_t[int(i + j * 1 + s.WCorr):int(i + j * 1 + s.WCorr + s.WCorr)]
+                    # ввытягиваем в вектор
+                    seq_skan_gap = seq_skan_gap.reshape((seq_skan_gap.shape[0] * seq_skan_gap.shape[1]))
+                    # проверка на тишину
+                    magn_val_qap1 = np.sqrt(seq_skan_gap.dot(seq_skan_gap))
+                    # если анализируется тишина
+                    if magn_val_qap1 == 0 or len(seq_skan_gap) != len(seq0):
+                        # переходим к следующему шагу
+                        continue
+                    # корреляция зазора и исходного звука
+                    result_gap1 = scipy.stats.pearsonr(seq0, seq_skan_gap)
+                    # если больше лимита обнаружения, то это не пауза между эхо
+                    if result_gap1[0] >= s.CorLim:
+                        cor = []
+                        # прервать цикл j, перейти к новому i
+                        break
 
                 # проверка гипотезы
                 # корреляция с шагом эхо затухает
