@@ -836,7 +836,7 @@ class Channel:
                         # переходим к следующему шагу
                         continue
                     result_gap = scipy.stats.pearsonr(seq0, seq0_gap)
-                    if result_gap[0] >= s.CorLim:
+                    if result_gap[0] >= s.QapLim:
                         cor = []
                         # прервать цикл j, перейти к новому i
                         break
@@ -855,7 +855,7 @@ class Channel:
                     # корреляция зазора и исходного звука
                     result_gap1 = scipy.stats.pearsonr(seq0, seq_skan_gap)
                     # если больше лимита обнаружения, то это не пауза между эхо
-                    if result_gap1[0] >= s.CorLim:
+                    if result_gap1[0] >= s.QapLim:
                         cor = []
                         # прервать цикл j, перейти к новому i
                         break
