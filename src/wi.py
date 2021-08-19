@@ -1,7 +1,7 @@
 """
 Реализация модуля по обработке аудиозаписей.
 """
-
+import math
 import os
 import time
 import itertools
@@ -581,7 +581,7 @@ class Channel:
         # Стробированная громкость в интервале измерения T
         lkg = []
 
-        for tj in range(len(segments_T)):
+        for tj in range(len(segments)):
 
             sumij = []
 
