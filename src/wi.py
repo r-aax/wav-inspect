@@ -357,13 +357,13 @@ class Channel:
             index_semp += [i for i in range(seq[0], seq[-1])]
 
         # новый семпл без тишины
-        y = y[index_semp]
+        y = self.Y[index_semp]
 
         S_full, phase = librosa.magphase(librosa.stft(y))
 
         S_filter = librosa.decompose.nn_filter(S_full,
                                                aggregate=np.median,
-                                               metric='cosine',
+                                               metric='cosine'
                                                )
 
         S_filter = np.minimum(S_full, S_filter)
@@ -747,7 +747,7 @@ class Channel:
 
         S_filter = librosa.decompose.nn_filter(S_full,
                                                aggregate=np.median,
-                                               metric='cosine',
+                                               metric='cosine'
                                                )
 
         S_filter = np.minimum(S_full, S_filter)
@@ -1490,8 +1490,8 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
         defects_names=[
-            # 'click', 'deaf', 'asnc', 'diff', 'hum', 'satur'
-            'echo'
+            'click', 'deaf', 'asnc', 'diff', 'hum', 'satur'
+            # 'echo'
         ])
 
 
