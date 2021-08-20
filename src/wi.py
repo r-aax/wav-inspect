@@ -739,29 +739,29 @@ class Channel:
         # список фреймов с эхо
         frame_time = []
 
-        # Выделяем голосовую активность
-        margin_v = 5
-        power = 5
-
-        S_full, phase = librosa.magphase(librosa.stft(self.Y))
-
-        S_filter = librosa.decompose.nn_filter(S_full,
-                                               aggregate=np.median,
-                                               metric='cosine'
-                                               )
-
-        S_filter = np.minimum(S_full, S_filter)
-
-        mask_v = librosa.util.softmask(S_full - S_filter,
-                                       margin_v * S_filter,
-                                       power=power)
-
-        S_foreground = mask_v * S_full
-
-        stft = S_foreground * phase
-
-        # в записи оставили только голос
-        y_foreground = librosa.istft(stft)
+        # # Выделяем голосовую активность
+        # margin_v = 0
+        # power = 2
+        #
+        # S_full, phase = librosa.magphase(librosa.stft(self.Y))
+        #
+        # S_filter = librosa.decompose.nn_filter(S_full,
+        #                                        aggregate=np.median,
+        #                                        metric='cosine'
+        #                                        )
+        #
+        # S_filter = np.minimum(S_full, S_filter)
+        #
+        # mask_v = librosa.util.softmask(S_full - S_filter,
+        #                                margin_v * S_filter,
+        #                                power=power)
+        #
+        # S_foreground = mask_v * S_full
+        #
+        # stft = S_foreground * phase
+        #
+        # # в записи оставили только голос
+        # y_foreground = librosa.istft(stft)
 
         # в исходной записи обнуляются все места, где нет голоса
         # спект амплитуд
@@ -769,7 +769,8 @@ class Channel:
 
         # врезаем тишину библиотекой Либроса
         # выдает номера семплов начала и конца звука, тишину выкидывает
-        semp = librosa.effects.split(y=y_foreground, top_db=s.TopDbForSilence)
+        # semp = librosa.effects.split(y=y_foreground, top_db=s.TopDbForSilence)
+        semp = librosa.effects.split(y=self.Y, top_db=s.TopDbForSilence)
 
         # перевод семпла в фрейм
         s_frames = librosa.samples_to_frames(semp, hop_length=512)
