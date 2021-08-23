@@ -105,46 +105,23 @@ class DefectEchoSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 w_corr,
-                 shift_cor,
-                 start_skan,
-                 skip_skan,
-                 long_skan,
-                 start_range_frames,
-                 range_frames,
-                 times_echo,
-                 cor_lim,
-                 qap_lim,
-                 top_db_for_silence):
+                 loc_corr_win,
+                 loc_corr_thr,
+                 glob_norm_corr_thr):
 
         """
         Конструктор.
 
-        :param w_corr: Ширина сканирующего окна.
-        :param shift_cor:     Шаг смещения окна звука - образца, от которого идет поиск эхо.
-        :param start_skan:  Начальное смещение сканирующих окон эхо от образца.
-        :param skip_skan:    Количество первых сканов, которые необходимо пропустить,
-         чтобы не детектировать протяжные звуки.
-        :param long_skan:   Ограничитель поиска эхо по времени записи (величина задается в количестве фреймов).
-        :param start_range_frames: Указывает сколько нижних амплитуд не учитывать
-        :param range_frames: Указывает верхний порог амплитуд
-        :param times_echo:  Количество повторений эхо для детектирования феномена
-        :param cor_lim: Лимит корреляции для детектирования эффекта
-        :param qap_lim: Лимит корреляции для детектирования зазора между сканирующими окнами.
-        :param top_db_for_silence: порог db для поиска тишины
+        :param loc_corr_win:       Длина окна локальной автокорреляции (секунды).
+        :param loc_corr_thr:       Порог локальной корреляции, выше которого детектируем эхо.
+        :param glob_norm_corr_thr: Порог нормализованной глобальной корреляции темпограммы
+                                   (значение берется как среднее хвоста функции) выше которого
+                                   это не ищется (думаем, что это музыкальный фрагмент).
         """
 
-        self.WCorr = w_corr
-        self.ShiftCor = shift_cor
-        self.StartSkan = start_skan
-        self.SkipSkan = skip_skan
-        self.LongSkan = long_skan
-        self.StartRangeFrames = start_range_frames
-        self.RangeFrames = range_frames
-        self.TimesEcho = times_echo
-        self.CorLim = cor_lim
-        self.QapLim = qap_lim
-        self.TopDbForSilence = top_db_for_silence
+        self.LocCorrWin = loc_corr_win
+        self.LocCorrThr = loc_corr_thr
+        self.GlobNormCorrThr = glob_norm_corr_thr
 
 # ==================================================================================================
 
@@ -330,17 +307,9 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
 defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
                                             orth_quartile_threshold=800)
 
-defect_echo_settings = DefectEchoSettings(w_corr=5,
-                                          shift_cor=1,
-                                          start_skan=1,
-                                          skip_skan=10,
-                                          long_skan=25,
-                                          start_range_frames=5,
-                                          range_frames=50,
-                                          times_echo=2,
-                                          cor_lim=0.84,
-                                          qap_lim=0.3,
-                                          top_db_for_silence=35)
+defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
+                                          loc_corr_thr=100.0,
+                                          glob_norm_corr_thr=0.5)
 
 defect_asnc_settings = DefectAsncSettings(thr=0.4)
 

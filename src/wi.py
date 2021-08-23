@@ -1244,7 +1244,7 @@ class WAV:
         for ch in self.Channels:
             ch.get_defects_deaf2(defects)
 
-        # ----------------------------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------------------
 
     def get_defects_echo(self, defects):
 
@@ -1254,10 +1254,34 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        # В разработке.
+        # Сильное эхо детектируется по значению автокорреляционной фунции по короткому окну.
+        # Если использовать только данный признак, то возникает слишком много ложных срабатываний
+        # на музыке, для которой характерно повторение звуков (темп, барабаны и т.д.).
+        # Для отсечения музыки вычисляется глобальное значение автокорреляционной функции
+        # для темпограммы - сохранение данной величины на высоком уровне свидетельствует
+        # о сохранении темпа в записи.
+        # Для скорости отсечение по глобальной автокорреляции темпограммы делаем по одному
+        # каналу.
+
+        oenv = librosa.onset.onset_strength(y=self.ch0().Y, sr=self.SampleRate)
+        tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=self.SampleRate)
+        acg = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
+        acg = librosa.util.normalize(acg)
+        if (acg[:len(acg) // 2].mean()) > self.Settings.Echo.GlobNormCorrThr:
+            return
 
         for ch in self.Channels:
-            ch.get_defects_echo(defects)
+            ln = int(self.SampleRate * self.Settings.Echo.LocCorrWin)
+            parts = len(ch.Y) // ln
+            for i in range(parts):
+                yp = ch.Y[i * ln: (i + 1) * ln]
+                ac = librosa.autocorrelate(yp)
+                ac = ac[ln // 5:]
+                if max(ac) > self.Settings.Echo.LocCorrThr:
+                    defects.append({'rec': self.FileName, 'ch': ch.Channel,
+                                    'name': 'echo',
+                                    'beg': i * (ln / self.SampleRate),
+                                    'end': (i + 1) * (ln / self.SampleRate)})
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1489,11 +1513,7 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        # filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
-        defects_names=[
-            'click', 'deaf', 'asnc', 'diff', 'hum', 'satur'
-            # 'echo'
-        ])
-
+        # filter_fun=lambda f: f in [''],
+        defects_names=['click', 'deaf', 'echo', 'asnc', 'diff', 'hum', 'satur'])
 
 # ==================================================================================================
