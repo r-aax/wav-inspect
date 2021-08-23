@@ -127,22 +127,6 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_nnet_data_cases(self, width, step):
-        """
-        Получение данные для нейросетей, порезанных на части.
-
-        :param width: Ширина кейса.
-        :param step:  Шаг между кейсами.
-
-        :return: Список кейсов для нейросети.
-        """
-
-        idxs = wi_utils.indices_slice_array(self.V.shape[0], 0, width, step)
-
-        return [self.V[fr:to] for (fr, to) in idxs]
-
-    # ----------------------------------------------------------------------------------------------
-
     def show_wave(self, figsize=(20, 8)):
         """
         Демонстрация звуковой волны.
@@ -405,25 +389,6 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defect_comet_markers(self):
-        """
-        Получение маркеров дефекта comet.
-
-        :return: Список маркеров comet.
-        """
-
-        s = self.Parent.Settings.Comet
-
-        # Получаем маркеры.
-        orth = [wi_utils.array_orthocenter(c) for c in self.V]
-        lev = [max(c) for c in self.V]
-        qu = [wi_utils.array_weight_quartile(c) for c in self.V]
-
-        return [orth[i] * (lev[i] > s.SignalThreshold) * qu[i] > s.OrthQuartileThreshold
-                for i in range(len(orth))]
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_silence2(self, x, limx = 0.02, hop_length=512, Xdb=None):
 
         '''
@@ -653,12 +618,11 @@ class Channel:
     # ----------------------------------------------------------------------------------------------
 
     def get_defects_deaf2(self, defects):
-
-        '''
+        """
         Получение дефектов deaf2.
 
         :param defects: Список дефектов.
-        '''
+        """
 
         s = self.Parent.Settings.Deaf2
 
@@ -702,25 +666,6 @@ class Channel:
                                         'deaf2',
                                         0.0,
                                         self.Parent.Duration))
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_comet(self, defects):
-        """
-        Получение дефектов comet.
-
-        :param defects: Список дефектов.
-        """
-
-        markers = self.get_defect_comet_markers()
-        ivs = wi_utils.markers_true_intervals(markers)
-
-        for iv in ivs:
-            defects.append(defect_descr(self.Parent.FileName,
-                                        self.Channel,
-                                        'comet',
-                                        self.specpos_to_time(iv[0]),
-                                        self.specpos_to_time(iv[1])))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1009,20 +954,6 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_comet(self, defects):
-        """
-        Получение маркеров дефекта comet.
-
-        :param defects: Список дефектов.
-        """
-
-        # В разработке.
-
-        for ch in self.Channels:
-            ch.get_defects_comet(defects)
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defects_asnc(self, defects):
         """
         Получение дефектов asnc.
@@ -1143,8 +1074,6 @@ class WAV:
             self.get_defects_deaf(defects)
         if 'deaf2' in defects_names:
             self.get_defects_deaf2(defects)
-        if 'comet' in defects_names:
-            self.get_defects_comet(defects)
         if 'echo' in defects_names:
             self.get_defects_echo(defects)
         if 'asnc' in defects_names:

@@ -126,31 +126,6 @@ class DefectEchoSettings:
 # ==================================================================================================
 
 
-class DefectCometSettings:
-    """
-    Настройки дефекта comet.
-    """
-
-    # ----------------------------------------------------------------------------------------------
-
-    def __init__(self,
-                 signal_threshold,
-                 orth_quartile_threshold):
-        """
-        Конструктор.
-
-        :param signal_threshold:        Порок максимального сигнала, необходимого для
-                                        поиска дефекта (с учетом нормирования).
-        :param orth_quartile_threshold: Порог ортоцентра с учетом квартиля сигнала для
-                                        принятия решения о дефекте.
-        """
-
-        self.SignalThreshold = signal_threshold
-        self.OrthQuartileThreshold = orth_quartile_threshold
-
-# ==================================================================================================
-
-
 class DefectAsncSettings:
     """
     Настройки дефекта asnc.
@@ -252,7 +227,6 @@ class DefectsSettings:
                  click,
                  deaf,
                  deaf2,
-                 comet,
                  echo,
                  asnc,
                  diff,
@@ -278,7 +252,6 @@ class DefectsSettings:
         self.Click = click
         self.Deaf = deaf
         self.Deaf2 = deaf2
-        self.Comet = comet
         self.Echo = echo
         self.Asnc = asnc
         self.Diff = diff
@@ -304,9 +277,6 @@ defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
                                             lim_percent_frame=65,
                                             deaf2_silence=0.005)
 
-defect_comet_settings = DefectCometSettings(signal_threshold=0.75,
-                                            orth_quartile_threshold=800)
-
 defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
                                           loc_corr_thr=100.0,
                                           glob_norm_corr_thr=0.5)
@@ -326,7 +296,6 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
                                    deaf=defect_deaf_settings,
                                    deaf2=defect_deaf2_settings,
-                                   comet=defect_comet_settings,
                                    echo=defect_echo_settings,
                                    asnc=defect_asnc_settings,
                                    diff=defect_diff_settings,
