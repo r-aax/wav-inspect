@@ -287,7 +287,7 @@ defect_diff_settings = DefectDiffSettings(width_min=10,
                                           thr=0.1)
 
 defect_hum_settings = DefectHumSettings(lo_ignore=10.0,
-                                        thr=0.5)
+                                        thr=0.51)
 
 defect_satur_settings = DefectSaturSettings(filter_width=32,
                                             power_thr=0.2)

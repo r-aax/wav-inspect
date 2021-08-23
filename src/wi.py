@@ -679,7 +679,7 @@ class Channel:
         s = self.Parent.Settings.Hum
 
         # Отрезаем совсем нижние частоты.
-        h = self.H[int((s.LoIgnore / 100.0) * len(self.H)):]
+        h = self.H[int((s.LoIgnore / 100.0) * len(self.H)):880]
         r = [0] * len(h)
 
         # Номера квантилей не передаются через настройки, это magic numbers,
