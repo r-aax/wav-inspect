@@ -1116,24 +1116,20 @@ class WAV:
         :param defects:       Список дефектов.
         """
 
-        if 'click' in defects_names:
-            self.get_defects_click(defects)
-        if 'muted' in defects_names:
-            self.get_defects_muted(defects)
-        if 'muted2' in defects_names:
-            self.get_defects_muted2(defects)
-        if 'echo' in defects_names:
-            self.get_defects_echo(defects)
-        if 'asnc' in defects_names:
-            self.get_defects_asnc(defects)
-        if 'diff' in defects_names:
-            self.get_defects_diff(defects)
-        if 'hum' in defects_names:
-            self.get_defects_hum(defects)
-        if 'dense' in defects_names:
-            self.get_defects_dense(defects)
-        if 'satur' in defects_names:
-            self.get_defects_satur(defects)
+        m = {'click'  : self.get_defects_click,
+             'muted'  : self.get_defects_muted,
+             'muted2' : self.get_defects_muted2,
+             'echo'   : self.get_defects_echo,
+             'asnc'   : self.get_defects_asnc,
+             'diff'   : self.get_defects_diff,
+             'hum'    : self.get_defects_hum,
+             'dense'  : self.get_defects_dense,
+             'satur'  : self.get_defects_satur}
+
+        for dn in defects_names:
+            fun = m.get(dn)
+            if fun:
+                fun(defects)
 
 # ==================================================================================================
 
