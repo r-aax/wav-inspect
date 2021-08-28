@@ -37,7 +37,6 @@ def defect_descr(rec, ch, name, beg, end):
 
     return {'rec': rec, 'ch': ch, 'name': name, 'beg': beg, 'end': end}
 
-
 # ==================================================================================================
 
 
@@ -701,10 +700,10 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_dence(self, defects):
+    def get_defects_dense(self, defects):
 
         '''
-        Получение дефектов dence.
+        Получение дефектов dense.
 
         :return:
         '''
@@ -728,7 +727,7 @@ class Channel:
 
             # условие выполненно, записать фреймы начала и конца
             defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'dence',
+                            'name': 'dense',
                             'beg': 0.0,
                             'end': self.Parent.Duration})
 
@@ -1077,15 +1076,15 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_dence(self, defects):
+    def get_defects_dense(self, defects):
         """
-        Получение дефектов dence.
+        Получение дефектов dense.
 
         :param defects: Список дефектов.
         """
 
         for ch in self.Channels:
-            ch.get_defects_dence(defects)
+            ch.get_defects_dense(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1127,10 +1126,10 @@ class WAV:
             self.get_defects_diff(defects)
         if 'hum' in defects_names:
             self.get_defects_hum(defects)
+        if 'dense' in defects_names:
+            self.get_defects_dense(defects)
         if 'satur' in defects_names:
             self.get_defects_satur(defects)
-        if 'dence' in defects_names:
-            self.get_defects_dence(defects)
 
 # ==================================================================================================
 
@@ -1175,7 +1174,6 @@ def analyze_directory(directory,
     print('    {0} defects found'.format(len(defects)))
     print('    {0} s time estimated'.format(time.time() - ts))
 
-
 # ==================================================================================================
 
 
@@ -1198,7 +1196,6 @@ def run(directory, filter_fun, defects_names):
     for d in defects:
         print(d)
 
-
 # ==================================================================================================
 
 
@@ -1211,9 +1208,16 @@ if __name__ == '__main__':
     # Сгенерированные оригинальные и нормализованные спектрограммы находятся
     # в директории docs.
 
-    run(directory='wavs/origin',
+    run(directory='wavs/asnc',
         filter_fun=lambda f: True,
-        # filter_fun=lambda f: f in [''],
-        defects_names=['click', 'deaf', 'echo', 'asnc', 'diff', 'hum', 'satur'])
+        defects_names=['click',
+                       'deaf',
+                       'deaf2',
+                       'echo',
+                       'asnc',
+                       'diff',
+                       'hum',
+                       'dense',
+                       'satur'])
 
 # ==================================================================================================
