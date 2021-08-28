@@ -821,7 +821,7 @@ class WAV:
                  False - в противном случае.
         """
 
-        return self.Channels is not None
+        return self.Ys is not None
 
     # ----------------------------------------------------------------------------------------------
 
