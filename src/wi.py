@@ -791,6 +791,11 @@ class WAV:
         # ее успешную загрузку, имя файла записывается в момент загрузки).
         self.FileName = filename
 
+        # Считанный массив амплитуд.
+        # Если запись моно, то массив одномерный.
+        # Если запись стерео, то массив двумерный.
+        self.Ys = None
+
         # Каналы.
         self.Channels = None
 
@@ -844,12 +849,12 @@ class WAV:
         try:
 
             # Чтение амплитуд и частоты дискретизации и вычисление продолжительности.
-            ys, self.SampleRate = librosa.load(filename, sr=None, mono=False)
-            self.Duration = librosa.get_duration(y=ys, sr=self.SampleRate)
+            self.Ys, self.SampleRate = librosa.load(filename, sr=None, mono=False)
+            self.Duration = librosa.get_duration(y=self.Ys, sr=self.SampleRate)
 
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Chunk(self, i, 0.0, self.Duration, y) for (i, y) in enumerate(ys)]
+            self.Channels = [Chunk(self, i, 0.0, self.Duration, y) for (i, y) in enumerate(self.Ys)]
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
