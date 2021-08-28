@@ -40,9 +40,9 @@ def defect_descr(rec, ch, name, beg, end):
 # ==================================================================================================
 
 
-class Channel:
+class Chunk:
     """
-    Канал.
+    Часть массива амплитуд.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -832,7 +832,7 @@ class WAV:
 
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Channel(self, i, y) for (i, y) in enumerate(ys)]
+            self.Channels = [Chunk(self, i, y) for (i, y) in enumerate(ys)]
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
@@ -1209,7 +1209,7 @@ if __name__ == '__main__':
     # в директории docs.
 
     run(directory='wavs/asnc',
-        filter_fun=lambda f: True,
+        filter_fun=lambda f: f in ['generated2.wav'],
         defects_names=['click',
                        'muted',
                        'muted2',
