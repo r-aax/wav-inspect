@@ -593,14 +593,14 @@ class Channel:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_deaf(self, defects):
+    def get_defects_muted(self, defects):
         """
-        Получение дефектов deaf.
+        Получение дефектов muted.
 
         :param defects: Список дефектов.
         """
 
-        s = self.Parent.Settings.Deaf
+        s = self.Parent.Settings.Muted
 
         ns = self.V
         w, h = ns.shape[0], ns.shape[1]
@@ -612,18 +612,18 @@ class Channel:
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
         if p < s.Thr:
             defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'deaf', 'beg': 0.0, 'end': self.Parent.Duration})
+                            'name': 'muted', 'beg': 0.0, 'end': self.Parent.Duration})
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_deaf2(self, defects):
+    def get_defects_muted2(self, defects):
         """
-        Получение дефектов deaf2.
+        Получение дефектов muted2.
 
         :param defects: Список дефектов.
         """
 
-        s = self.Parent.Settings.Deaf2
+        s = self.Parent.Settings.Muted2
 
         # кратковременное преобразование Фурье
         Xdb = self.Spectre
@@ -632,7 +632,7 @@ class Channel:
         lim_db = int((int(Xdb.max()) - int(Xdb.min())) / 100 * s.PercentageOfLimDb) + int(Xdb.min())
 
         # обнулить фреймы с тишиной
-        Xdb = self.get_silence2(x = self.Y, limx = s.Deaf2Silence, Xdb = Xdb)
+        Xdb = self.get_silence2(x=self.Y, limx=s.Muted2Silence, Xdb=Xdb)
 
         # нашли пустоты во всей матрице - все что ниже пороговой амплитуды
         Xdb = Xdb <= lim_db
@@ -662,7 +662,7 @@ class Channel:
         if len(void_frame) >= lim_frame:
             defects.append(defect_descr(self.Parent.FileName,
                                         self.Channel,
-                                        'deaf2',
+                                        'muted2',
                                         0.0,
                                         self.Parent.Duration))
 
@@ -910,9 +910,9 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_deaf(self, defects):
+    def get_defects_muted(self, defects):
         """
-        Получение маркеров дефекта deaf.
+        Получение маркеров дефекта muted.
 
         :param defects: Список дефектов.
         """
@@ -928,14 +928,14 @@ class WAV:
         # Причина глухоты записи не определяется.
 
         for ch in self.Channels:
-            ch.get_defects_deaf(defects)
+            ch.get_defects_muted(defects)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_deaf2(self, defects):
+    def get_defects_muted2(self, defects):
 
         """
-        Получение маркеров дефекта deaf2.
+        Получение маркеров дефекта muted2.
 
         :param defects: Список дефектов.
         """
@@ -943,7 +943,7 @@ class WAV:
         # В разработке.
 
         for ch in self.Channels:
-            ch.get_defects_deaf2(defects)
+            ch.get_defects_muted2(defects)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1114,10 +1114,10 @@ class WAV:
 
         if 'click' in defects_names:
             self.get_defects_click(defects)
-        if 'deaf' in defects_names:
-            self.get_defects_deaf(defects)
-        if 'deaf2' in defects_names:
-            self.get_defects_deaf2(defects)
+        if 'muted' in defects_names:
+            self.get_defects_muted(defects)
+        if 'muted2' in defects_names:
+            self.get_defects_muted2(defects)
         if 'echo' in defects_names:
             self.get_defects_echo(defects)
         if 'asnc' in defects_names:
@@ -1211,8 +1211,8 @@ if __name__ == '__main__':
     run(directory='wavs/asnc',
         filter_fun=lambda f: True,
         defects_names=['click',
-                       'deaf',
-                       'deaf2',
+                       'muted',
+                       'muted2',
                        'echo',
                        'asnc',
                        'diff',

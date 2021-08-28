@@ -45,9 +45,9 @@ class DefectClickSettings:
 # ==================================================================================================
 
 
-class DefectDeafSettings:
+class DefectMutedSettings:
     """
-    Настройки дефекта deaf.
+    Настройки дефекта muted.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -65,9 +65,9 @@ class DefectDeafSettings:
 # ==================================================================================================
 
 
-class DefectDeaf2Settings:
+class DefectMuted2Settings:
     """
-    Настройки дефекта deaf2.
+    Настройки дефекта muted2.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ class DefectDeaf2Settings:
                  percent_not_void,
                  percentage_of_error,
                  lim_percent_frame,
-                 deaf2_silence):
+                 muted2_silence):
 
         """
         Конструктор.
@@ -86,13 +86,13 @@ class DefectDeaf2Settings:
         :param percent_not_void:     Процент фрейма, который не исследуется.
         :param percentage_of_error:  Процент погрешности для детектирования глухого фрейма.
         :param lim_percent_frame:    Процент порога наличия глухих фреймов.
-        :param deaf2_silence:        Порог преобразования глухого сигнала в тишину.
+        :param muted2_silence:       Порог преобразования глухого сигнала в тишину.
         """
         self.PercentageOfLimDb = percentage_of_lim_db
         self.PercentNotVoid = percent_not_void
         self.PercentageOfError = percentage_of_error
         self.LimPercentFrame = lim_percent_frame
-        self.Deaf2Silence = deaf2_silence
+        self.Muted2Silence = muted2_silence
 
 # ==================================================================================================
 
@@ -225,8 +225,8 @@ class DefectsSettings:
     def __init__(self,
                  limits_db,
                  click,
-                 deaf,
-                 deaf2,
+                 muted,
+                 muted2,
                  echo,
                  asnc,
                  diff,
@@ -238,8 +238,8 @@ class DefectsSettings:
         :param limits_db: Лимиты по силе (за пределами лимитов вообще
                           не учитываем сигнал).
         :param click:     Настройки дефекта click2.
-        :param deaf:      Настройки дефекта deaf.
-        :param deaf2:     Настройки дефекта deaf2.
+        :param muted:     Настройки дефекта muted.
+        :param muted2:    Настройки дефекта muted2.
         :param comet:     Настройки дефекта comet.
         :param echo:      Настройки дефекта echo.
         :param asnc:      Настрйоки дефекта asnc.
@@ -250,8 +250,8 @@ class DefectsSettings:
 
         self.LimitsDb = limits_db
         self.Click = click
-        self.Deaf = deaf
-        self.Deaf2 = deaf2
+        self.Muted = muted
+        self.Muted2 = muted2
         self.Echo = echo
         self.Asnc = asnc
         self.Diff = diff
@@ -269,13 +269,13 @@ defect_click_settings = DefectClickSettings(quartiles=4,
                                             thr=0.6,
                                             mean_thr=0.1)
 
-defect_deaf_settings = DefectDeafSettings(thr=7.0)
+defect_muted_settings = DefectMutedSettings(thr=7.0)
 
-defect_deaf2_settings = DefectDeaf2Settings(percentage_of_lim_db=10,
-                                            percent_not_void=10,
-                                            percentage_of_error=10,
-                                            lim_percent_frame=65,
-                                            deaf2_silence=0.005)
+defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db=10,
+                                              percent_not_void=10,
+                                              percentage_of_error=10,
+                                              lim_percent_frame=65,
+                                              muted2_silence=0.005)
 
 defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
                                           loc_corr_thr=100.0,
@@ -294,8 +294,8 @@ defect_satur_settings = DefectSaturSettings(filter_width=32,
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
-                                   deaf=defect_deaf_settings,
-                                   deaf2=defect_deaf2_settings,
+                                   muted=defect_muted_settings,
+                                   muted2=defect_muted2_settings,
                                    echo=defect_echo_settings,
                                    asnc=defect_asnc_settings,
                                    diff=defect_diff_settings,
