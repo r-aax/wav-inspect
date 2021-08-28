@@ -1,12 +1,12 @@
 """
 Реализация модуля по обработке аудиозаписей.
 """
+
 import math
 import os
 import time
 import itertools
 import pathlib
-
 import scipy.ndimage
 import sklearn
 import numpy as np
@@ -47,17 +47,21 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
-    def __init__(self, parent, channel, y):
+    def __init__(self, parent, channel, offset, duration, y):
         """
         Конструктор канала.
 
-        :param parent:  Родительская запись.
-        :param channel: Канал.
-        :param y:       Массив амплитуд.
+        :param parent:   Родительская запись.
+        :param channel:  Номер канала.
+        :param offset:   Смещение от начала канала (секунды).
+        :param duration: Длительность фрагмента (секунды).
+        :param y:        Массив амплитуд.
         """
 
         self.Parent = parent
         self.Channel = channel
+        self.Offset = offset
+        self.Duration = duration
         self.Y = y
 
         # Исходный и транспонированный спектр, который строит librosa.
@@ -109,7 +113,7 @@ class Chunk:
         :return: Точка в спектре.
         """
 
-        return int(tx * (self.Spectre.shape[-1] / self.Parent.Duration))
+        return int(tx * (self.Spectre.shape[-1] / self.Duration))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -122,7 +126,7 @@ class Chunk:
         :return: Точка времени.
         """
 
-        return specpos * (self.Parent.Duration / self.Spectre.shape[-1])
+        return specpos * (self.Duration / self.Spectre.shape[-1])
 
     # ----------------------------------------------------------------------------------------------
 
@@ -832,7 +836,7 @@ class WAV:
 
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Chunk(self, i, y) for (i, y) in enumerate(ys)]
+            self.Channels = [Chunk(self, i, 0.0, self.Duration, y) for (i, y) in enumerate(ys)]
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
