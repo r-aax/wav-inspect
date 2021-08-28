@@ -61,7 +61,7 @@ class DefectsList:
         :param end:  Конец дефекта.
         """
 
-        self.append({'rec': rec, 'ch': ch, 'name': name, 'beg': beg, 'end': end})
+        self.L.append({'rec': rec, 'ch': ch, 'name': name, 'beg': beg, 'end': end})
 
 # ==================================================================================================
 
@@ -588,11 +588,11 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_click(self, defects):
+    def get_defects_click(self, dlist):
         """
         Получение дефектов click.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         s = self.Parent.Settings.Click
@@ -618,16 +618,15 @@ class Chunk:
             y = np.array([min([max(q(c, qi, win_h)) for qi in range(qs)]) for c in vi])
             if (y.max() - y.mean() > s.Thr) and (y.mean() < s.MeanThr):
                 t = self.specpos_to_time(win_w * i + np.argmax(y))
-                defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                                'name': 'click', 'beg': t, 'end': t})
+                dlist.add(self.Parent.FileName, self.Channel, 'click', t, t)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted(self, defects):
+    def get_defects_muted(self, dlist):
         """
         Получение дефектов muted.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         s = self.Parent.Settings.Muted
@@ -641,16 +640,15 @@ class Chunk:
 
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
         if p < s.Thr:
-            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'muted', 'beg': 0.0, 'end': self.Parent.Duration})
+            dlist.add(self.Parent.FileName, self.Channel, 'muted', 0.0, self.Parent.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_muted2(self, defects):
+    def get_defects_muted2(self, dlist):
         """
         Получение дефектов muted2.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         s = self.Parent.Settings.Muted2
@@ -690,16 +688,15 @@ class Chunk:
         # вывод резудьтата
         # если глухих фреймов больше лимита, то запись глухая
         if len(void_frame) >= lim_frame:
-            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel, 'name': 'muted2',
-                            'beg': 0.0, 'end': self.Parent.Duration})
+            dlist.add(self.Parent.FileName, self.Channel, 'muted2', 0.0, self.Parent.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_hum(self, defects):
+    def get_defects_hum(self, dlist):
         """
         Получение дефектов hum.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         s = self.Parent.Settings.Hum
@@ -722,18 +719,16 @@ class Chunk:
         d = r - rsm
 
         if d.max() > s.Thr:
-            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'hum', 'beg': 0.0, 'end': self.Parent.Duration})
+            dlist.add(self.Parent.FileName, self.Channel, 'hum', 0.0, self.Parent.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_dense(self, defects):
-
-        '''
+    def get_defects_dense(self, dlist):
+        """
         Получение дефектов dense.
 
-        :return:
-        '''
+        :param defects: Список дефектов.
+        """
 
         # нормализованная спектрограмма
         xh = self.H
@@ -753,18 +748,15 @@ class Chunk:
         if xh.T[0:int(xh.shape[1] / 100 * perset)].max() > 0:
 
             # условие выполненно, записать фреймы начала и конца
-            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'dense',
-                            'beg': 0.0,
-                            'end': self.Parent.Duration})
+            dlist.add(self.Parent.FileName, self.Channel, 'dense', 0.0, self.Parent.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_satur(self, defects):
+    def get_defects_satur(self, dlist):
         """
         Получение дефектов satur.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         r = librosa.feature.rms(S=self.ASpectre)[0]
@@ -773,10 +765,8 @@ class Chunk:
         intervals = wi_utils.markers_true_intervals(m)
 
         for interval in intervals:
-            defects.append({'rec': self.Parent.FileName, 'ch': self.Channel,
-                            'name': 'satur',
-                            'beg': self.specpos_to_time(interval[0]),
-                            'end': self.specpos_to_time(interval[1])})
+            dlist.add(self.Parent.FileName, self.Channel, 'satur',
+                      self.specpos_to_time(interval[0]), self.specpos_to_time(interval[1]))
 
 # ==================================================================================================
 
@@ -974,12 +964,12 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_echo(self, defects):
+    def get_defects_echo(self, dlist):
 
         """
         Получение маркеров дефекта echo.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         # Сильное эхо детектируется по значению автокорреляционной фунции по короткому окну.
@@ -1006,18 +996,16 @@ class WAV:
                 ac = librosa.autocorrelate(yp)
                 ac = ac[ln // 5:]
                 if max(ac) > self.Settings.Echo.LocCorrThr:
-                    defects.append({'rec': self.FileName, 'ch': ch.Channel,
-                                    'name': 'echo',
-                                    'beg': i * (ln / self.SampleRate),
-                                    'end': (i + 1) * (ln / self.SampleRate)})
+                    dlist.add(self.FileName, ch.Channel, 'echo',
+                              i * (ln / self.SampleRate), (i + 1) * (ln / self.SampleRate))
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_asnc(self, defects):
+    def get_defects_asnc(self, dlist):
         """
         Получение дефектов asnc.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         # Дефект рассинхронизации каналов выполняется практически бесплатно на
@@ -1045,16 +1033,15 @@ class WAV:
         if c[0][1] < self.Settings.Asnc.Thr:
             # Вместо номера канала ставим 2,
             # так как дефект не относится к какому-то одному каналу.
-            defects.append({'rec': self.FileName, 'ch': 2,
-                            'name': 'asnc', 'beg': 0.0, 'end': self.Duration})
+            dlist.add(self.FileName, 2, 'asnc', 0.0, self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_diff(self, defects):
+    def get_defects_diff(self, dlist):
         """
         Получение дефектов diff.
 
-        :param defects: Список дефектов.
+        :param dlist: Список дефектов.
         """
 
         # Определение дефекта слишком значимого расхождения каналов
@@ -1074,8 +1061,7 @@ class WAV:
         if r.max() > self.Settings.Diff.Thr:
             # Вместо номера канала ставим 2,
             # так как дефект не относится к какому-то одному каналу.
-            defects.append({'rec': self.FileName, 'ch': 2,
-                            'name': 'diff', 'beg': 0.0, 'end': self.Duration})
+            dlist.add(self.FileName, 2, 'diff', 0.0, self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1160,7 +1146,6 @@ class WAV:
 def analyze_directory(directory,
                       filter_fun,
                       defects_names,
-                      defects,
                       verbose=False):
     """
     Анализ директории с файлами на наличие дефектов.
@@ -1169,10 +1154,12 @@ def analyze_directory(directory,
     :param filter_fun:    Дополнительная функция для отфильтровывания файлов, которые необходимо
                           анализировать.
     :param defects_names: Список имен дефектов.
-    :param defects:       Список, в который записывать дефекты.
     :param verbose:       Признак печати процесса анализа.
+
+    :return: Список описаний дефектов.
     """
 
+    dlist = DefectsList()
     fs = os.listdir(directory)
     records_count = 0
     records_time = 0.0
@@ -1189,13 +1176,17 @@ def analyze_directory(directory,
             if wav.is_ok():
                 records_count = records_count + 1
                 records_time = records_time + wav.Duration
-                wav.get_defects(defects_names, defects)
+                wav.get_defects(defects_names, dlist)
+
+    dd = dlist.get()
 
     print('Process finished:')
     print('    {0} records processed'.format(records_count))
     print('    {0} s of audio records processed'.format(records_time))
-    print('    {0} defects found'.format(len(defects)))
+    print('    {0} defects found'.format(len(dd)))
     print('    {0} s time estimated'.format(time.time() - ts))
+
+    return dd
 
 # ==================================================================================================
 
@@ -1209,14 +1200,13 @@ def run(directory, filter_fun, defects_names):
     :param defects_names: Список имен дефектов.
     """
 
-    defects = []
-    analyze_directory(directory,
-                      filter_fun=filter_fun,
-                      defects_names=defects_names,
-                      verbose=True,
-                      defects=defects)
+    # Получаем описания дефектов.
+    dd = analyze_directory(directory,
+                           filter_fun=filter_fun,
+                           defects_names=defects_names,
+                           verbose=True)
 
-    for d in defects:
+    for d in dd:
         print(d)
 
 # ==================================================================================================
