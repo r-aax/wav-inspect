@@ -105,6 +105,7 @@ class DefectEchoSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  loc_corr_win,
                  loc_corr_thr,
                  glob_norm_corr_thr):
@@ -112,6 +113,7 @@ class DefectEchoSettings:
         """
         Конструктор.
 
+        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
         :param loc_corr_win:       Длина окна локальной автокорреляции (секунды).
         :param loc_corr_thr:       Порог локальной корреляции, выше которого детектируем эхо.
         :param glob_norm_corr_thr: Порог нормализованной глобальной корреляции темпограммы
@@ -119,6 +121,7 @@ class DefectEchoSettings:
                                    это не ищется (думаем, что это музыкальный фрагмент).
         """
 
+        self.Sep = sep
         self.LocCorrWin = loc_corr_win
         self.LocCorrThr = loc_corr_thr
         self.GlobNormCorrThr = glob_norm_corr_thr
@@ -283,7 +286,8 @@ defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db=10,
                                               lim_percent_frame=65,
                                               muted2_silence=0.005)
 
-defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
+defect_echo_settings = DefectEchoSettings(sep=(10.0, 2.0),
+                                          loc_corr_win=2.0,
                                           loc_corr_thr=100.0,
                                           glob_norm_corr_thr=0.5)
 

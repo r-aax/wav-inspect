@@ -1084,23 +1084,35 @@ class WAV:
         # Для скорости отсечение по глобальной автокорреляции темпограммы делаем по одному
         # каналу.
 
-        oenv = librosa.onset.onset_strength(y=self.ch0().Y, sr=self.SampleRate)
-        tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=self.SampleRate)
-        acg = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
-        acg = librosa.util.normalize(acg)
-        if (acg[:len(acg) // 2].mean()) > self.Settings.Echo.GlobNormCorrThr:
-            return
+        s = Separator(self.Duration, self.Settings.Echo.Sep)
+        chunk_coords = s.get_next()
 
-        for ch in self.Channels:
-            ln = int(self.SampleRate * self.Settings.Echo.LocCorrWin)
-            parts = len(ch.Y) // ln
-            for i in range(parts):
-                yp = ch.Y[i * ln: (i + 1) * ln]
-                ac = librosa.autocorrelate(yp)
-                ac = ac[ln // 5:]
-                if max(ac) > self.Settings.Echo.LocCorrThr:
-                    dlist.add(self.FileName, ch.Channel, 'echo',
-                              i * (ln / self.SampleRate), (i + 1) * (ln / self.SampleRate))
+        while chunk_coords:
+            chunks = self.get_chunks_pair(chunk_coords)
+
+            # Ориентируемся по каналу 0 для определения подходящей темпограммы.
+            # Для этого не требуется построение спектрограмм.
+            oenv = librosa.onset.onset_strength(y=chunks[0].Y, sr=self.SampleRate)
+            tempogram = librosa.feature.tempogram(onset_envelope=oenv, sr=self.SampleRate)
+            acg = librosa.autocorrelate(oenv, max_size=tempogram.shape[0])
+            acg = librosa.util.normalize(acg)
+            if (acg[:len(acg) // 2].mean()) > self.Settings.Echo.GlobNormCorrThr:
+                return
+
+            for ch in chunks:
+                # Для анализа эхо не строим никакие спектрограммы.
+                ln = int(self.SampleRate * self.Settings.Echo.LocCorrWin)
+                parts = len(ch.Y) // ln
+                for i in range(parts):
+                    yp = ch.Y[i * ln: (i + 1) * ln]
+                    ac = librosa.autocorrelate(yp)
+                    ac = ac[ln // 5:]
+                    if max(ac) > self.Settings.Echo.LocCorrThr:
+                        dlist.add(self.FileName, ch.Channel, 'echo',
+                                  ch.Offset + i * (ln / self.SampleRate),
+                                  ch.Offset + (i + 1) * (ln / self.SampleRate))
+
+            chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1341,16 +1353,17 @@ if __name__ == '__main__':
     # Сгенерированные оригинальные и нормализованные спектрограммы находятся
     # в директории docs.
 
-    run(directory='wavs/asnc',
-        filter_fun=lambda f: True,
-        defects_names=['click',
-                       'muted',
-                       'muted2',
-                       'echo',
-                       'asnc',
-                       'diff',
-                       'hum',
-                       'dense',
-                       'satur'])
+    run(directory='wavs/origin',
+        filter_fun=lambda f: f in ['0103.wav', '0104.wav', '0110.wav', '0111.wav'],
+        defects_names=['echo'])
+        #defects_names=['click',
+        #               'muted',
+        #               'muted2',
+        #               'echo',
+        #               'asnc',
+        #               'diff',
+        #               'hum',
+        #               'dense',
+        #               'satur'])
 
 # ==================================================================================================
