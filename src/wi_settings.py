@@ -157,15 +157,18 @@ class DefectDiffSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  width_min,
                  thr):
         """
         Конструктор.
 
+        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
         :param width: Ширина окна для взятия минимума разницы.
         :param thr:   Порог определения дефекта.
         """
 
+        self.Sep = sep
         self.WidthMin = width_min
         self.Thr = thr
 
@@ -287,7 +290,8 @@ defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
 defect_asnc_settings = DefectAsncSettings(sep=(10.0, 5.0),
                                           thr=0.4)
 
-defect_diff_settings = DefectDiffSettings(width_min=10,
+defect_diff_settings = DefectDiffSettings(sep=(5.0, 5.0),
+                                          width_min=10,
                                           thr=0.1)
 
 defect_hum_settings = DefectHumSettings(lo_ignore=10.0,

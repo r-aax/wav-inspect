@@ -1161,18 +1161,27 @@ class WAV:
         # рассинхронизацию и другие значительные отклонения в звучании каналов.
         # Работает с нормализованной спектрограммой.
 
-        m0 = np.array([vi.mean() for vi in self.ch0().V])
-        m1 = np.array([vi.mean() for vi in self.ch1().V])
-        d = np.abs(m0 - m1)
-        r = sp.ndimage.minimum_filter1d(d, self.Settings.Diff.WidthMin)
+        s = Separator(self.Duration, self.Settings.Asnc.Sep)
+        chunk_coords = s.get_next()
 
-        # Не ищем точное место превышения порога, так как запись нужно резать на части
-        # продолжительностью несколько секунд и искать дефект отдельно по каждой из них.
+        while chunk_coords:
+            ch0, ch1 = self.get_chunks_pair(chunk_coords)
 
-        if r.max() > self.Settings.Diff.Thr:
-            # Вместо номера канала ставим (-1),
-            # так как дефект не относится к какому-то одному каналу.
-            dlist.add(self.FileName, -1, 'diff', 0.0, self.Duration)
+            # Требуется пересчитать нормализованную спектрограмму V.
+            ch0.generate_spectres()
+            ch1.generate_spectres()
+
+            m0 = np.array([vi.mean() for vi in ch0.V])
+            m1 = np.array([vi.mean() for vi in ch1.V])
+            d = np.abs(m0 - m1)
+            r = sp.ndimage.minimum_filter1d(d, self.Settings.Diff.WidthMin)
+
+            if r.max() > self.Settings.Diff.Thr:
+                # Вместо номера канала ставим (-1),
+                # так как дефект не относится к какому-то одному каналу.
+                dlist.add(self.FileName, -1, 'diff', ch0.Offset, ch0.Offset + ch0.Duration)
+
+            chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
