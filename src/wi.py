@@ -413,10 +413,10 @@ class Chunk:
     # ----------------------------------------------------------------------------------------------
 
     def music_to_voice(self,
-                   margin_v=11.75,
-                   power=3,
-                   lim_percent=24,
-                   top_db=32):
+                       margin_v=11.75,
+                       power=3,
+                       lim_percent=24,
+                       top_db=32):
         """
         разделяет аудиозапись на музыку и голос.
 
@@ -682,7 +682,8 @@ class Chunk:
             y = np.array([min([max(q(c, qi, win_h)) for qi in range(qs)]) for c in vi])
             if (y.max() - y.mean() > s.Thr) and (y.mean() < s.MeanThr):
                 t = self.specpos_to_time(win_w * i + np.argmax(y))
-                dlist.add(self.Parent.FileName, self.Channel, 'click', t, t)
+                dlist.add(self.Parent.FileName, self.Channel, 'click',
+                          self.Offset + t, self.Offset + t)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -704,7 +705,8 @@ class Chunk:
 
         # Принимаем решение о глухой записи, по порогу среднего значения ортоцентра.
         if p < s.Thr:
-            dlist.add(self.Parent.FileName, self.Channel, 'muted', 0.0, self.Parent.Duration)
+            dlist.add(self.Parent.FileName, self.Channel, 'muted',
+                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -752,7 +754,8 @@ class Chunk:
         # вывод резудьтата
         # если глухих фреймов больше лимита, то запись глухая
         if len(void_frame) >= lim_frame:
-            dlist.add(self.Parent.FileName, self.Channel, 'muted2', 0.0, self.Parent.Duration)
+            dlist.add(self.Parent.FileName, self.Channel, 'muted2',
+                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -783,7 +786,8 @@ class Chunk:
         d = r - rsm
 
         if d.max() > s.Thr:
-            dlist.add(self.Parent.FileName, self.Channel, 'hum', 0.0, self.Parent.Duration)
+            dlist.add(self.Parent.FileName, self.Channel, 'hum',
+                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -812,7 +816,8 @@ class Chunk:
         if xh.T[0:int(xh.shape[1] / 100 * perset)].max() > 0:
 
             # условие выполненно, записать фреймы начала и конца
-            dlist.add(self.Parent.FileName, self.Channel, 'dense', 0.0, self.Parent.Duration)
+            dlist.add(self.Parent.FileName, self.Channel, 'dense',
+                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -830,7 +835,8 @@ class Chunk:
 
         for interval in intervals:
             dlist.add(self.Parent.FileName, self.Channel, 'satur',
-                      self.specpos_to_time(interval[0]), self.specpos_to_time(interval[1]))
+                      self.Offset + self.specpos_to_time(interval[0]),
+                      self.Offset + self.specpos_to_time(interval[1]))
 
 # ==================================================================================================
 
@@ -931,6 +937,17 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def channels_count(self):
+        """
+        Получение количества каналов.
+
+        :return: Количество каналов.
+        """
+
+        return self.Ys.shape[0]
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_chunk(self, channel_num, chunk_coords):
         """
         Получение фрагмента.
@@ -1003,8 +1020,15 @@ class WAV:
         # Критерием щелчка является сильный кратковременный скачок (превышение локального
         # предела по интенсивности и низкое значение средней интенсивности по всему окну).
 
-        for ch in self.Channels:
-            ch.get_defects_click(defects)
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Click.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_click(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1025,8 +1049,15 @@ class WAV:
         # поэтому данная функция не используется).
         # Причина глухоты записи не определяется.
 
-        for ch in self.Channels:
-            ch.get_defects_muted(defects)
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Muted.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_muted(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1038,10 +1069,15 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        # В разработке.
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Muted2.Sep)
 
-        for ch in self.Channels:
-            ch.get_defects_muted2(defects)
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_muted2(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1194,8 +1230,15 @@ class WAV:
         # Automatic detection of hum in audio signals.
         # J. Audio Eng. Socc., Vol. 62, No. 9, 2014, September.
 
-        for ch in self.Channels:
-            ch.get_defects_hum(defects)
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Hum.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_hum(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1206,8 +1249,15 @@ class WAV:
         :param defects: Список дефектов.
         """
 
-        for ch in self.Channels:
-            ch.get_defects_dense(defects)
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Dense.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_dense(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1222,8 +1272,15 @@ class WAV:
         # Выполняется поиск участков, в которых превышен порог по энергии звука,
         # полученной по спектрограмме амплидуд.
 
-        for ch in self.Channels:
-            ch.get_defects_satur(defects)
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Satur.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.generate_spectres()
+                ch.get_defects_satur(defects)
+                chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 

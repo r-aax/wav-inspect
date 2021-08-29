@@ -14,6 +14,7 @@ class DefectClickSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  quartiles,
                  win_h,
                  win_w,
@@ -22,6 +23,7 @@ class DefectClickSettings:
         """
         Конструктор.
 
+        :param sep:       Параметры разделения (размер фрагмента и хвоста в секундах).
         :param quartiles: Количество квартилей (вертикальных блоков),
                           по которым ищется максимум сигнала.
         :param win_h:     Высота блока частот, по которым ищется максимум.
@@ -36,6 +38,7 @@ class DefectClickSettings:
                           измеряется в относительных величинах, максимальное значение 1).
         """
 
+        self.Sep = sep
         self.Quartiles = quartiles
         self.WinH = win_h
         self.WinW = win_w
@@ -53,13 +56,16 @@ class DefectMutedSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  thr):
         """
         Конструктор.
 
+        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
         :param thr: Порог среднего значения ортоцентра записи (в процентах).
         """
 
+        self.Sep = sep
         self.Thr = thr
 
 # ==================================================================================================
@@ -73,6 +79,7 @@ class DefectMuted2Settings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  percentage_of_lim_db,
                  percent_not_void,
                  percentage_of_error,
@@ -82,12 +89,15 @@ class DefectMuted2Settings:
         """
         Конструктор.
 
+        :param sep:                  Параметры разделения (размер фрагмента и хвоста в секундах).
         :param percentage_of_lim_db: Порог обнаружения отсутствия частот.
         :param percent_not_void:     Процент фрейма, который не исследуется.
         :param percentage_of_error:  Процент погрешности для детектирования глухого фрейма.
         :param lim_percent_frame:    Процент порога наличия глухих фреймов.
         :param muted2_silence:       Порог преобразования глухого сигнала в тишину.
         """
+
+        self.Sep = sep
         self.PercentageOfLimDb = percentage_of_lim_db
         self.PercentNotVoid = percent_not_void
         self.PercentageOfError = percentage_of_error
@@ -113,7 +123,7 @@ class DefectEchoSettings:
         """
         Конструктор.
 
-        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
+        :param sep:                Параметры разделения (размер фрагмента и хвоста в секундах).
         :param loc_corr_win:       Длина окна локальной автокорреляции (секунды).
         :param loc_corr_thr:       Порог локальной корреляции, выше которого детектируем эхо.
         :param glob_norm_corr_thr: Порог нормализованной глобальной корреляции темпограммы
@@ -166,7 +176,7 @@ class DefectDiffSettings:
         """
         Конструктор.
 
-        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
+        :param sep:   Параметры разделения (размер фрагмента и хвоста в секундах).
         :param width: Ширина окна для взятия минимума разницы.
         :param thr:   Порог определения дефекта.
         """
@@ -186,17 +196,40 @@ class DefectHumSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  lo_ignore,
                  thr):
         """
         Конструктор.
 
+        :param sep:       Параметры разделения (размер фрагмента и хвоста в секундах).
         :param lo_ignore: Нижняя граница игнорирования частот (в процентах).
         :param thr:       Порог скачка разницы оригинального и сглаженного отношений квантилей.
         """
 
+        self.Sep = sep
         self.LoIgnore = lo_ignore
         self.Thr = thr
+
+# ==================================================================================================
+
+
+class DefectDenseSettings:
+    """
+    Настройки дефекта dense.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 sep):
+        """
+        Конструктор.
+
+        :param sep:       Параметры разделения (размер фрагмента и хвоста в секундах).
+        """
+
+        self.Sep = sep
 
 # ==================================================================================================
 
@@ -209,15 +242,18 @@ class DefectSaturSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  filter_width,
                  power_thr):
         """
         Конструктор.
 
+        :param sep:          Параметры разделения (размер фрагмента и хвоста в секундах).
         :param filter_width: Ширина фильтра.
         :param power_thr:    Порог сигнала.
         """
 
+        self.Sep = sep
         self.FilterWidth = filter_width
         self.PowerThr = power_thr
 
@@ -240,6 +276,7 @@ class DefectsSettings:
                  asnc,
                  diff,
                  hum,
+                 dense,
                  satur):
         """
         Конструктор настроек для всех дефектов.
@@ -254,6 +291,7 @@ class DefectsSettings:
         :param asnc:      Настрйоки дефекта asnc.
         :param diff:      Настройки дефекта diff.
         :param hum:       Настройки дефекта hum.
+        :param dense:     Настройки дефекта dense.
         :param satur:     Настройки дефекта satur.
         """
 
@@ -265,6 +303,7 @@ class DefectsSettings:
         self.Asnc = asnc
         self.Diff = diff
         self.Hum = hum
+        self.Dense = dense
         self.Satur = satur
 
 # ==================================================================================================
@@ -272,15 +311,18 @@ class DefectsSettings:
 
 # Определение настроек по умолчанию.
 
-defect_click_settings = DefectClickSettings(quartiles=4,
+defect_click_settings = DefectClickSettings(sep=(20.0, 1.0),
+                                            quartiles=4,
                                             win_h=16,
                                             win_w=32,
                                             thr=0.6,
                                             mean_thr=0.1)
 
-defect_muted_settings = DefectMutedSettings(thr=7.0)
+defect_muted_settings = DefectMutedSettings(sep=(10.0, 2.0),
+                                            thr=7.0)
 
-defect_muted2_settings = DefectMuted2Settings(percentage_of_lim_db=10,
+defect_muted2_settings = DefectMuted2Settings(sep=(10.0, 2.0),
+                                              percentage_of_lim_db=10,
                                               percent_not_void=10,
                                               percentage_of_error=10,
                                               lim_percent_frame=65,
@@ -298,10 +340,14 @@ defect_diff_settings = DefectDiffSettings(sep=(5.0, 5.0),
                                           width_min=10,
                                           thr=0.1)
 
-defect_hum_settings = DefectHumSettings(lo_ignore=10.0,
+defect_hum_settings = DefectHumSettings(sep=(10.0, 2.0),
+                                        lo_ignore=10.0,
                                         thr=0.51)
 
-defect_satur_settings = DefectSaturSettings(filter_width=32,
+defect_dense_settings = DefectDenseSettings(sep=(10.0, 2.0))
+
+defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
+                                            filter_width=32,
                                             power_thr=0.2)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
@@ -312,6 +358,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    asnc=defect_asnc_settings,
                                    diff=defect_diff_settings,
                                    hum=defect_hum_settings,
+                                   dense=defect_dense_settings,
                                    satur=defect_satur_settings)
 
 # ==================================================================================================
