@@ -866,9 +866,6 @@ class WAV:
         # Если запись стерео, то массив двумерный.
         self.Ys = None
 
-        # Каналы.
-        self.Channels = None
-
         # Частота дискретизации.
         self.SampleRate = None
 
@@ -921,12 +918,6 @@ class WAV:
             # Чтение амплитуд и частоты дискретизации и вычисление продолжительности.
             self.Ys, self.SampleRate = librosa.load(filename, sr=None, mono=False)
             self.Duration = librosa.get_duration(y=self.Ys, sr=self.SampleRate)
-
-            # Создание каналов.
-            # Частота дискретизации и продолжительность отправляются в каждый канал.
-            self.Channels = [Chunk(self, i, 0.0, self.Duration, y) for (i, y) in enumerate(self.Ys)]
-            self.Channels[0].generate_spectres()
-            self.Channels[1].generate_spectres()
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
