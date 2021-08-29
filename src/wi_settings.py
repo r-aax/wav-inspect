@@ -134,13 +134,16 @@ class DefectAsncSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
+                 sep,
                  thr):
         """
         Конструктор.
 
+        :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
         :param thr: Порог рассинхронизации каналов.
         """
 
+        self.Sep = sep
         self.Thr = thr
 
 # ==================================================================================================
@@ -281,7 +284,8 @@ defect_echo_settings = DefectEchoSettings(loc_corr_win=2.0,
                                           loc_corr_thr=100.0,
                                           glob_norm_corr_thr=0.5)
 
-defect_asnc_settings = DefectAsncSettings(thr=0.4)
+defect_asnc_settings = DefectAsncSettings(sep=(10.0, 5.0),
+                                          thr=0.4)
 
 defect_diff_settings = DefectDiffSettings(width_min=10,
                                           thr=0.1)

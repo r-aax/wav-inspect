@@ -22,6 +22,63 @@ import wi_settings
 # ==================================================================================================
 
 
+class Separator:
+    """
+    Класс для разделения массива амплитуд.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self, whole_size, sep_sizes):
+        """
+        Конструктор.
+
+        :param whole_size: Полный размер (целое).
+        :param sep_sizes:  Кортеж из настроек разделения
+                           (размер отрезка - целое, минимальный размер хвоста - целое).
+        """
+
+        self.WholeSize = whole_size
+        self.ChunkSize = sep_sizes[0]
+        self.MinSize = sep_sizes[1]
+        self.CurStart = 0
+
+    # ----------------------------------------------------------------------------------------------
+
+    def reset(self):
+        """
+        Сброс разделителя.
+        """
+
+        self.CurStart = 0
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_next(self):
+        """
+        Получение индексов следующего фрагмента.
+
+        :return: Кортеж из индексов следующего фрагмента (либо None).
+        """
+
+        # Случай, когда фрагмент полностью укладывается.
+        if self.CurStart + self.ChunkSize <= self.WholeSize:
+            res = (self.CurStart, self.CurStart + self.ChunkSize)
+            self.CurStart = self.CurStart + self.ChunkSize
+            return res
+
+        # Фрагмент полностью не укладываается, но хвост можно вернуть.
+        if self.WholeSize - self.CurStart >= self.MinSize:
+            res = (self.CurStart, self.WholeSize)
+            self.CurStart = self.WholeSize
+            return res
+
+        # Фрагмент взять не получится.
+        return None
+
+# ==================================================================================================
+
+
 class DefectsList:
     """
     Список дефектов.
@@ -865,6 +922,38 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_chunk(self, channel_num, chunk_coords):
+        """
+        Получение фрагмента.
+
+        :param channel_num:  Номер канала.
+        :param chunk_coords: Координаты фрагмента.
+
+        :return: Фрагмент.
+        """
+
+        offset = chunk_coords[0]
+        duration = chunk_coords[1] - offset
+        y_beg = int(chunk_coords[0] * self.SampleRate)
+        y_end = int(chunk_coords[1] * self.SampleRate)
+
+        return Chunk(self, channel_num, offset, duration, self.Ys[channel_num][y_beg:y_end])
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_chunks_pair(self, coords):
+        """
+        Получение пары фрагментов из соседних каналов.
+
+        :param coords: Координаты фрагментов.
+
+        :return: Пара фрагментов.
+        """
+
+        return (self.get_chunk(0, coords), self.get_chunk(1, coords))
+
+    # ----------------------------------------------------------------------------------------------
+
     def ch0(self):
         """
         Получение канала 0.
@@ -1033,12 +1122,20 @@ class WAV:
         # Audio Engineering Society, Convention paper 10205.
         # 146-th Convention, 2019 March 20-23, Dublin, Ireland.
 
-        c = np.corrcoef(self.ch0().Y, self.ch1().Y)
+        s = Separator(self.Duration, self.Settings.Asnc.Sep)
+        chunk_coords = s.get_next()
 
-        if c[0][1] < self.Settings.Asnc.Thr:
-            # Вместо номера канала ставим (-1),
-            # так как дефект не относится к какому-то одному каналу.
-            dlist.add(self.FileName, -1, 'asnc', 0.0, self.Duration)
+        while chunk_coords:
+            ch0, ch1 = self.get_chunks_pair(chunk_coords)
+
+            c = np.corrcoef(ch0.Y, ch1.Y)
+
+            if c[0][1] < self.Settings.Asnc.Thr:
+                # Вместо номера канала ставим (-1),
+                # так как дефект не относится к какому-то одному каналу.
+                dlist.add(self.FileName, -1, 'asnc', ch0.Offset, ch0.Offset + ch0.Duration)
+
+            chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
