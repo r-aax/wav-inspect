@@ -1122,8 +1122,6 @@ class WAV:
         #     запись на слух очевидно дефектная;
         #   - отрицательный коэффициент означает сдвиг по фазе между каналами
         #     (среди тестовых записей данного дефекта нет).
-        # Данный коэффициент может быть вычислен также с помощью вызова scipy.stats.pearsonr
-        # (нужно замерить, что эффективнее по времени выполнения).
         #
         # Источник:
         # Pablo Alonzo-Jimenez, Luis Joglar-Ongay, Xavier Serra, Dmitry Bogdanov.
@@ -1138,9 +1136,9 @@ class WAV:
         while chunk_coords:
             ch0, ch1 = self.get_chunks_pair(chunk_coords)
 
-            c = np.corrcoef(ch0.Y, ch1.Y)
+            c = sp.stats.pearsonr(ch0.Y, ch1.Y)
 
-            if c[0][1] < self.Settings.Asnc.Thr:
+            if c[0] < self.Settings.Asnc.Thr:
                 # Вместо номера канала ставим (-1),
                 # так как дефект не относится к какому-то одному каналу.
                 dlist.add(self.FileName, -1, 'asnc', ch0.Offset, ch0.Offset + ch0.Duration)
