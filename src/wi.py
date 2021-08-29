@@ -168,9 +168,6 @@ class Chunk:
         # Матрица нормализованного спектра, которая является массивом вертикальных линий.
         self.V = None
 
-        # Безусловно генерируем спектры.
-        self.generate_spectres()
-
     # ----------------------------------------------------------------------------------------------
 
     def generate_spectres(self):
@@ -922,6 +919,8 @@ class WAV:
             # Создание каналов.
             # Частота дискретизации и продолжительность отправляются в каждый канал.
             self.Channels = [Chunk(self, i, 0.0, self.Duration, y) for (i, y) in enumerate(self.Ys)]
+            self.Channels[0].generate_spectres()
+            self.Channels[1].generate_spectres()
 
         except BaseException:
             # Если что-то пошло не так, то не разбираемся с этим, а просто игнорим ошибку.
@@ -1136,6 +1135,8 @@ class WAV:
         while chunk_coords:
             ch0, ch1 = self.get_chunks_pair(chunk_coords)
 
+            # Рассинхрон не требует анализа спектров - ничего не строим.
+
             c = sp.stats.pearsonr(ch0.Y, ch1.Y)
 
             if c[0] < self.Settings.Asnc.Thr:
@@ -1332,7 +1333,7 @@ if __name__ == '__main__':
     # в директории docs.
 
     run(directory='wavs/asnc',
-        filter_fun=lambda f: f in ['generated2.wav'],
+        filter_fun=lambda f: True,
         defects_names=['click',
                        'muted',
                        'muted2',
