@@ -1364,8 +1364,55 @@ def run(directory, filter_fun, defects_names):
                            defects_names=defects_names,
                            verbose=True)
 
+    m = {}
     for d in dd:
+        m[d['rec']] = {'click': False, 'muted': False, 'muted2': False, 'echo': False,
+                       'asnc': False, 'diff': False, 'hum': False, 'dense': False,
+                       'satur': False}
+    for d in dd:
+        m[d['rec']][d['name']] = True
         print(d)
+
+    def col(b):
+        if b:
+            return ' bgcolor="darkgreen"'
+        else:
+            return ''
+
+    # Print file.
+    with open('report.html', 'w') as f:
+        f.write('<html>')
+        f.write('<head>')
+        f.write('</head>')
+        f.write('<body>')
+        f.write('<table border="1">')
+        f.write('<tr><th>record</th>'
+                '<th>click</th><th>muted</th><th>muted2</th>'
+                '<th>echo</th><th>asnc</th><th>diff</th>'
+                '<th>hum</th><th>dense</th><th>satur</th>'
+                '</tr>')
+        for mi in m:
+            f.write('<tr>')
+            f.write('<td>{0}</td>'
+                    '<td{1}>&nbsp;</td><td{2}>&nbsp;</td><td{3}>&nbsp;</td>'
+                    '<td{4}>&nbsp;</td><td{5}>&nbsp;</td><td{6}>&nbsp;</td>'
+                    '<td{7}>&nbsp;</td>'
+                    '<td{8}>&nbsp;</td>'
+                    '<td{9}>&nbsp;</td>'.format(mi,
+                                                col(m[mi]['click']),
+                                                col(m[mi]['muted']),
+                                                col(m[mi]['muted2']),
+                                                col(m[mi]['echo']),
+                                                col(m[mi]['asnc']),
+                                                col(m[mi]['diff']),
+                                                col(m[mi]['hum']),
+                                                col(m[mi]['dense']),
+                                                col(m[mi]['satur'])))
+            f.write('</tr>')
+        f.write('</table>')
+        f.write('</body>')
+        f.write('</html>')
+        f.close()
 
 # ==================================================================================================
 
@@ -1380,7 +1427,7 @@ if __name__ == '__main__':
     # в директории docs.
 
     run(directory='wavs/origin',
-        filter_fun=lambda f: f in ['0001.wav', '0002.wav', '0003.wav', '0004.wav', '0005.wav'],
+        filter_fun=lambda f: True,
         defects_names=['click',
                        'muted',
                        'muted2',
