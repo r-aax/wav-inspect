@@ -1161,7 +1161,7 @@ class WAV:
         # рассинхронизацию и другие значительные отклонения в звучании каналов.
         # Работает с нормализованной спектрограммой.
 
-        s = Separator(self.Duration, self.Settings.Asnc.Sep)
+        s = Separator(self.Duration, self.Settings.Diff.Sep)
         chunk_coords = s.get_next()
 
         while chunk_coords:
