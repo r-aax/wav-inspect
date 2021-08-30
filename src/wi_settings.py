@@ -344,7 +344,7 @@ defect_hum_settings = DefectHumSettings(sep=(10.0, 2.0),
                                         lo_ignore=10.0,
                                         thr=0.51)
 
-defect_dense_settings = DefectDenseSettings(sep=(30.0, 10.0))
+defect_dense_settings = DefectDenseSettings(sep=(30.0, 0.0))
 
 defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
                                             filter_width=32,
