@@ -1365,10 +1365,12 @@ def run(directory, filter_fun, defects_names):
                            verbose=True)
 
     m = {}
-    for d in dd:
-        m[d['rec']] = {'click': False, 'muted': False, 'muted2': False, 'echo': False,
-                       'asnc': False, 'diff': False, 'hum': False, 'dense': False,
-                       'satur': False}
+    fs = os.listdir(directory)
+    for f in fs:
+        if filter_fun(f):
+            m['{0}/{1}'.format(directory, f)] = {'click': False, 'muted': False, 'muted2': False,
+                                                 'echo': False, 'asnc': False, 'diff': False,
+                                                 'hum': False, 'dense': False, 'satur': False}
     for d in dd:
         m[d['rec']][d['name']] = True
         print(d)
