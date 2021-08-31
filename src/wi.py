@@ -838,6 +838,17 @@ class Chunk:
                       self.Offset + self.specpos_to_time(interval[0]),
                       self.Offset + self.specpos_to_time(interval[1]))
 
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_dbl(self, dlist):
+        """
+        Получение дефектов dbl.
+
+        :param dlist: Список дефектов.
+        """
+
+        pass
+
 # ==================================================================================================
 
 
@@ -1275,6 +1286,24 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_dbl(self, defects):
+        """
+        Получение дефектов dbl.
+
+        :param defects: Список дефектов.
+        """
+
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Dbl.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.get_defects_dbl(defects)
+                chunk_coords = s.get_next()
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects(self, defects_names, defects):
         """
         Получение списка дефектов по списку имен дефектов.
@@ -1291,7 +1320,8 @@ class WAV:
              'diff'   : self.get_defects_diff,
              'hum'    : self.get_defects_hum,
              'dense'  : self.get_defects_dense,
-             'satur'  : self.get_defects_satur}
+             'satur'  : self.get_defects_satur,
+             'dbl'    : self.get_defects_dbl}
 
         for dn in defects_names:
             fun = m.get(dn)
@@ -1370,7 +1400,8 @@ def run(directory, filter_fun, defects_names):
         if filter_fun(f):
             m['{0}/{1}'.format(directory, f)] = {'click': False, 'muted': False, 'muted2': False,
                                                  'echo': False, 'asnc': False, 'diff': False,
-                                                 'hum': False, 'dense': False, 'satur': False}
+                                                 'hum': False, 'dense': False, 'satur': False,
+                                                 'dbl': False}
     for d in dd:
         m[d['rec']][d['name']] = True
         print(d)
@@ -1392,6 +1423,7 @@ def run(directory, filter_fun, defects_names):
                 '<th>click</th><th>muted</th><th>muted2</th>'
                 '<th>echo</th><th>asnc</th><th>diff</th>'
                 '<th>hum</th><th>dense</th><th>satur</th>'
+                '<th>dbl</th>'
                 '</tr>')
         for mi in m:
             f.write('<tr>')
@@ -1400,16 +1432,18 @@ def run(directory, filter_fun, defects_names):
                     '<td{4}>&nbsp;</td><td{5}>&nbsp;</td><td{6}>&nbsp;</td>'
                     '<td{7}>&nbsp;</td>'
                     '<td{8}>&nbsp;</td>'
-                    '<td{9}>&nbsp;</td>'.format(mi,
-                                                col(m[mi]['click']),
-                                                col(m[mi]['muted']),
-                                                col(m[mi]['muted2']),
-                                                col(m[mi]['echo']),
-                                                col(m[mi]['asnc']),
-                                                col(m[mi]['diff']),
-                                                col(m[mi]['hum']),
-                                                col(m[mi]['dense']),
-                                                col(m[mi]['satur'])))
+                    '<td{9}>&nbsp;</td>'
+                    '<td{10}>&nbsp;</td>'.format(mi,
+                                                 col(m[mi]['click']),
+                                                 col(m[mi]['muted']),
+                                                 col(m[mi]['muted2']),
+                                                 col(m[mi]['echo']),
+                                                 col(m[mi]['asnc']),
+                                                 col(m[mi]['diff']),
+                                                 col(m[mi]['hum']),
+                                                 col(m[mi]['dense']),
+                                                 col(m[mi]['satur']),
+                                                 col(m[mi]['dbl'])))
             f.write('</tr>')
         f.write('</table>')
         f.write('</body>')
@@ -1438,6 +1472,7 @@ if __name__ == '__main__':
                        'diff',
                        'hum',
                        'dense',
-                       'satur'])
+                       'satur',
+                       'dbl'])
 
 # ==================================================================================================
