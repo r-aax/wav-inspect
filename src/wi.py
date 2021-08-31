@@ -68,7 +68,7 @@ class Separator:
             return res
 
         # Фрагмент полностью не укладываается, но хвост можно вернуть.
-        if self.WholeSize - self.CurStart >= self.MinSize:
+        if self.WholeSize - self.CurStart > self.MinSize:
             res = (self.CurStart, self.WholeSize)
             self.CurStart = self.WholeSize
             return res
