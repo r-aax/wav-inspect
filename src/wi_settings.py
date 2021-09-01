@@ -268,13 +268,21 @@ class DefectDblSettings:
     # ----------------------------------------------------------------------------------------------
 
     def __init__(self,
-                 sep):
+                 sep,
+                 top,
+                 thr):
         """
         Конструктор.
 
         :param sep: Параметры разделения (размер фрагмента и хвоста в секундах).
+        :param top: Количество анализируемых верхних амплитуд.
+        :param thr: Порог по дублям среди верхних амплитуд
+                    (если слишком много точных совпадений, то считаем, что
+                    имеет место ошибка цифрового дубля).
         """
 
+        self.Top = top
+        self.Thr = thr
         self.Sep = sep
 
 # ==================================================================================================
@@ -373,7 +381,9 @@ defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
                                             filter_width=32,
                                             power_thr=0.2)
 
-defect_dbl_settings = DefectDblSettings(sep=(30.0, 10.0))
+defect_dbl_settings = DefectDblSettings(sep=(30.0, 4.0),
+                                        top=100,
+                                        thr=0.05)
 
 defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    click=defect_click_settings,
