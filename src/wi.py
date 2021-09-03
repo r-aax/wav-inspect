@@ -248,6 +248,25 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
+    def show_spectre_dense(self, figsize=(20, 8)):
+
+        '''
+        Демонстрация спектра для dense
+
+        :param figsize:
+        '''
+
+        xh = self.H
+
+        xh.sort(axis=1)
+
+        plt.figure(figsize=figsize)
+        librosa.display.specshow(xh, sr=self.Parent.SampleRate,
+                                 x_axis='time', y_axis='frames', cmap='nipy_spectral')
+        plt.colorbar()
+
+    # ----------------------------------------------------------------------------------------------
+
     def show_spectral_centroid(self, figsize=(20, 8)):
         """
         Демонстрация графика спектрального центроида.
@@ -798,14 +817,17 @@ class Chunk:
         :param defects: Список дефектов.
         """
 
+        # загрузка настроек
+        s = self.Parent.Settings.Dense
+
         # нормализованная спектрограмма
         xh = self.H
 
         # задаем процент погрешности
-        perset = 3
+        percent = s.Percent
 
         # выбираем рабочий диапозон частот
-        xh = xh[500:900]
+        xh = xh[s.MinHz:s.MaxHz]
 
         # смещаем частоты вправо сортировкой
         xh.sort(axis=1)
@@ -813,7 +835,7 @@ class Chunk:
         # условие нахождения звукового события
         # сейчас: если в данном окне частот что-то есть, то True
         # надо: детектор горизонтальных линий
-        if xh.T[0:int(xh.shape[1] / 100 * perset)].max() > 0:
+        if xh.T[0:int(xh.shape[1] / 100 * percent)].max() > 0:
 
             # условие выполненно, записать фреймы начала и конца
             dlist.add(self.Parent.FileName, self.Channel, 'dense',
@@ -1498,7 +1520,8 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=['click',
+        defects_names=[
+                       'click',
                        'muted',
                        'muted2',
                        'echo',
@@ -1507,6 +1530,7 @@ if __name__ == '__main__':
                        'hum',
                        'dense',
                        'satur',
-                       'dbl'])
+                       'dbl'
+                      ])
 
 # ==================================================================================================
