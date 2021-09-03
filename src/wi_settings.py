@@ -224,6 +224,7 @@ class DefectDenseSettings:
     def __init__(self,
                  sep,
                  percent,
+                 width,
                  min_hz,
                  max_hz):
         """
@@ -231,12 +232,14 @@ class DefectDenseSettings:
 
         :param sep:       Параметры разделения (размер фрагмента и хвоста в секундах).
         :param percent:   Процент погрешности для детектирования.
+        :param width:     Допустимая ширина для детектируемой частоты.
         :param min_hz:    Минимальный порог рабочих частот (в высоте фрейма).
         :param max_hz:    Максимальный порог рабочих частот (в высоте фрейма).
         """
 
         self.Sep = sep
         self.Percent = percent
+        self.Width = width
         self.MinHz = min_hz
         self.MaxHz = max_hz
 
@@ -387,6 +390,7 @@ defect_hum_settings = DefectHumSettings(sep=(10.0, 2.0),
 
 defect_dense_settings = DefectDenseSettings(sep=(30.0, 0.0),
                                             percent=3,
+                                            width=4,
                                             min_hz=500,
                                             max_hz=900)
 

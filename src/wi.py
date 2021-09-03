@@ -843,9 +843,36 @@ class Chunk:
         xh.sort(axis=1)
 
         # условие нахождения звукового события
-        # сейчас: если в данном окне частот что-то есть, то True
-        # надо: детектор горизонтальных линий
-        if xh.T[0:int(xh.shape[1] / 100 * percent)].max() > 0:
+
+        # исследуем только последние проценты
+        xht = xh.T[0:int(xh.shape[1] / 100 * percent)]
+        xh = xht.T
+
+        # проверсяем каждую строку окна на наличие частот
+        fil = []
+        flag = 0
+        width = s.Width
+        for n, i in enumerate(xh):
+
+            # если в строке есть частоты
+            if i.max() != 0:
+
+                fil.append(1)
+
+            # если в строке нет частот
+            else:
+
+                fil.append(0)
+
+            # если подряд есть частоты
+            if n > width-1 and sum(fil[n-width:n]) == width:
+
+                # пердположительно это не то что мы ищим
+                flag = 1
+                break
+
+        # если это то что мы искали и там встрачались частоты
+        if flag == 0 and sum(fil) > 0:
 
             # условие выполненно, записать фреймы начала и конца
             dlist.add(self.Parent.FileName, self.Channel, 'dense',
