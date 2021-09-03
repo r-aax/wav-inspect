@@ -544,9 +544,19 @@ class Chunk:
         :return: Список громкости звука на участках длиной Т.
         '''
 
+        # определение уровня громкости
+        # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
+        # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
+
         T = round(T_itr*0.1+Tg-0.1, 1)
 
-        x, sr = librosa.load(self.FileName, mono=False, sr=48000)
+        if self.Parent.SampleRate != 48000:
+
+            x, sr = librosa.load(self.FileName, mono=False, sr=48000)
+
+        else:
+
+            x, sr = self.Y, self.Parent.SampleRate
 
         # К-фильтр частот
         # коэф-ты при sr = 48000:
