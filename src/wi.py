@@ -1491,10 +1491,7 @@ def run(directory, filter_fun, defects_names):
     fs = os.listdir(directory)
     for f in fs:
         if filter_fun(f):
-            m['{0}/{1}'.format(directory, f)] = {'click': False, 'muted': False, 'muted2': False,
-                                                 'echo': False, 'asnc': False, 'diff': False,
-                                                 'hum': False, 'dense': False, 'satur': False,
-                                                 'dbl': False}
+            m['{0}/{1}'.format(directory, f)] = {dn: False for dn in defects_names}
     for d in dd:
         m[d['rec']][d['name']] = True
         print(d)
@@ -1507,40 +1504,14 @@ def run(directory, filter_fun, defects_names):
 
     # Print file.
     with open('report.html', 'w') as f:
-        f.write('<html>')
-        f.write('<head>')
-        f.write('</head>')
-        f.write('<body>')
-        f.write('<table border="1">')
-        f.write('<tr><th>record</th>'
-                '<th>click</th><th>muted</th><th>muted2</th>'
-                '<th>echo</th><th>asnc</th><th>diff</th>'
-                '<th>hum</th><th>dense</th><th>satur</th>'
-                '<th>dbl</th>'
-                '</tr>')
+        f.write('<html><head></head><body><table border="1">')
+        defects_ths = ''.join(['<td>{0}</th>'.format(dn) for dn in defects_names])
+        f.write('<tr><th>record</th>{0}</tr>'.format(defects_ths))
         for mi in m:
-            f.write('<tr>')
-            f.write('<td>{0}</td>'
-                    '<td{1}>&nbsp;</td><td{2}>&nbsp;</td><td{3}>&nbsp;</td>'
-                    '<td{4}>&nbsp;</td><td{5}>&nbsp;</td><td{6}>&nbsp;</td>'
-                    '<td{7}>&nbsp;</td>'
-                    '<td{8}>&nbsp;</td>'
-                    '<td{9}>&nbsp;</td>'
-                    '<td{10}>&nbsp;</td>'.format(mi,
-                                                 col(m[mi]['click']),
-                                                 col(m[mi]['muted']),
-                                                 col(m[mi]['muted2']),
-                                                 col(m[mi]['echo']),
-                                                 col(m[mi]['asnc']),
-                                                 col(m[mi]['diff']),
-                                                 col(m[mi]['hum']),
-                                                 col(m[mi]['dense']),
-                                                 col(m[mi]['satur']),
-                                                 col(m[mi]['dbl'])))
-            f.write('</tr>')
-        f.write('</table>')
-        f.write('</body>')
-        f.write('</html>')
+            defects_tds = ''.join(['<td{0}>&nbsp;</td>'.format(col(m[mi][dn]))
+                                   for dn in defects_names])
+            f.write('<tr><td>{0}</td>{1}</tr>'.format(mi, defects_tds))
+        f.write('</table></body></html>')
         f.close()
 
 # ==================================================================================================
@@ -1557,17 +1528,18 @@ if __name__ == '__main__':
 
     run(directory='wavs/origin',
         filter_fun=lambda f: True,
-        defects_names=[
-                       'click',
-                       'muted',
-                       'muted2',
-                       'echo',
-                       'asnc',
-                       'diff',
-                       'hum',
-                       'dense',
-                       'satur',
-                       'dbl'
-                      ])
+        defects_names=
+            [
+                'click',
+                'muted',
+                'muted2',
+                'echo',
+                'asnc',
+                'diff',
+                'hum',
+                'dense',
+                'satur',
+                'dbl'
+            ])
 
 # ==================================================================================================
