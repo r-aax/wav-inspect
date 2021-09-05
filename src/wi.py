@@ -549,14 +549,7 @@ class Chunk:
         # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
 
         T = round(T_itr*0.1+Tg-0.1, 1)
-
-        if self.Parent.SampleRate != 48000:
-
-            x, sr = librosa.load(self.FileName, mono=False, sr=48000)
-
-        else:
-
-            x, sr = self.Y, self.Parent.SampleRate
+        x, sr = [self.Y], self.Parent.SampleRate
 
         # К-фильтр частот
         # коэф-ты при sr = 48000:
@@ -906,7 +899,22 @@ class Chunk:
         :param dlist: Список дефектов.
         """
 
-        pass
+        if self.Parent.SampleRate != 48000:
+            # Для SampleRate, отличного от 48000 данный алгоритм по стандарту неприменим.
+            # Просто игнорируем его применение.
+            return
+
+        # Гарантированно низкое значение.
+        max_lev = -100.0
+
+        # Достаем максимум звука из записи.
+        levs = self.get_volume_level()
+        if len(levs) > 0:
+            max_lev = max(levs)
+
+        if max_lev > self.Parent.Settings.Loud.Thr:
+            dlist.add(self.Parent.FileName, self.Channel, 'loud',
+                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
