@@ -899,6 +899,17 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_loud(self, dlist):
+        """
+        Получение дефектов loud.
+
+        :param dlist: Список дефектов.
+        """
+
+        pass
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_dbl(self, dlist):
         """
         Получение дефектов dbl.
@@ -1358,6 +1369,26 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
+    def get_defects_loud(self, defects):
+        """
+        Получение дефектов loud.
+
+        :param defects: Список дефектов.
+        """
+
+        # Определение дефекта loud - превышение уровня звука.
+
+        for channel_num in range(self.channels_count()):
+            s = Separator(self.Duration, self.Settings.Loud.Sep)
+
+            chunk_coords = s.get_next()
+            while chunk_coords:
+                ch = self.get_chunk(channel_num, chunk_coords)
+                ch.get_defects_loud(defects)
+                chunk_coords = s.get_next()
+
+    # ----------------------------------------------------------------------------------------------
+
     def get_defects_dbl(self, defects):
         """
         Получение дефектов dbl.
@@ -1414,6 +1445,7 @@ class WAV:
              'hum'    : self.get_defects_hum,
              'dense'  : self.get_defects_dense,
              'satur'  : self.get_defects_satur,
+             'loud'   : self.get_defects_loud,
              'dbl'    : self.get_defects_dbl}
 
         for dn in defects_names:
@@ -1539,6 +1571,7 @@ if __name__ == '__main__':
                 'hum',
                 'dense',
                 'satur',
+                'loud',
                 'dbl'
             ])
 

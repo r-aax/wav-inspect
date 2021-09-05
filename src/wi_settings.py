@@ -273,6 +273,26 @@ class DefectSaturSettings:
 # ==================================================================================================
 
 
+class DefectLoudSettings:
+    """
+    Настройки дефекта loud.
+    """
+
+    # ----------------------------------------------------------------------------------------------
+
+    def __init__(self,
+                 sep):
+        """
+        Конструктор.
+
+        :param sep:          Параметры разделения (размер фрагмента и хвоста в секундах).
+        """
+
+        self.Sep = sep
+
+# ==================================================================================================
+
+
 class DefectDblSettings:
     """
     Настройки дефекта dbl.
@@ -319,6 +339,7 @@ class DefectsSettings:
                  hum,
                  dense,
                  satur,
+                 loud,
                  dbl):
         """
         Конструктор настроек для всех дефектов.
@@ -335,6 +356,7 @@ class DefectsSettings:
         :param hum:       Настройки дефекта hum.
         :param dense:     Настройки дефекта dense.
         :param satur:     Настройки дефекта satur.
+        :param loud:      Настройки дефекта loud.
         :param dbl:       Найтройки дефекта dbl.
         """
 
@@ -348,6 +370,7 @@ class DefectsSettings:
         self.Hum = hum
         self.Dense = dense
         self.Satur = satur
+        self.Loud = loud
         self.Dbl = dbl
 
 # ==================================================================================================
@@ -398,6 +421,8 @@ defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
                                             filter_width=32,
                                             power_thr=0.2)
 
+defect_loud_settings = DefectLoudSettings(sep=(10.0, 1.0))
+
 defect_dbl_settings = DefectDblSettings(sep=(30.0, 4.0),
                                         top=100,
                                         thr=0.05)
@@ -412,6 +437,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    hum=defect_hum_settings,
                                    dense=defect_dense_settings,
                                    satur=defect_satur_settings,
+                                   loud=defect_loud_settings,
                                    dbl=defect_dbl_settings)
 
 # ==================================================================================================
