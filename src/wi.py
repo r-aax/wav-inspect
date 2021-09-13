@@ -1149,9 +1149,6 @@ class WAV:
             # Просто игнорируем его применение.
             return
 
-        # Гарантированно низкое значение.
-        max_lev = -100.0
-
         s = Separator(self.Duration, self.Settings.Loud.Sep)
         chunk_coords = s.get_next()
 
@@ -1162,6 +1159,9 @@ class WAV:
 
             # Достаем максимум звука из записи.
             levs = self.get_volume_level(ch)
+
+            # Гарантированно низкое значение.
+            max_lev = -100.0
 
             if len(levs) > 0:
                 max_lev = max(levs)
