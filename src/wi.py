@@ -531,149 +531,6 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_volume_level(self,
-                         Tg = 0.4, # 400 мс
-                         T_itr = 10, # количество строблений
-                         ):
-
-        '''
-
-        :param Tg: Размер стробления (сек).
-        :param T_itr: Количество строблений на участке Т.
-
-        :return: Список громкости звука на участках длиной Т.
-        '''
-
-        # определение уровня громкости
-        # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
-        # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
-
-        T = round(T_itr*0.1+Tg-0.1, 1)
-        x, sr = [self.Y], self.Parent.SampleRate
-
-        # К-фильтр частот
-        # коэф-ты при sr = 48000:
-        a1 = 1.69065929318241 * (-1)
-        a2 = 0.73248077421585
-        b0 = 1.53512485958697
-        b1 = 2.69169618940638 * (-1)
-        b2 = 1.19839281085285
-
-        # цифровой биквадратный блок
-        # через каскадное включение
-        # рекурсивного и нерекурсивного фильтров
-        y = []
-        for xi in x[:5]:
-
-            # промежуточный сигнал
-            wi = []
-
-            # итоговый сигнал
-            yi = []
-
-            # включение рекурсивного фильтра
-            for num, val in enumerate(xi):
-                if num <= 1:
-                    wi.append(val)  # val или 0
-                else:
-                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
-
-            # включение нерекурсивного фильтра
-            for numw, valw in enumerate(wi):
-                if numw <= 1:
-                    yi.append(valw)  # val или 0
-                else:
-                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
-
-            y.append(yi)
-
-        y = np.array(y)
-
-        # К-фильтр частот
-        # коэф-ты при sr = 48000:
-        a1 = 1.99004745483398 * (-1)
-        a2 = 0.99007225036621
-        b0 = 1.0
-        b1 = 2.0 * (-1)
-        b2 = 1.0
-
-        x = y
-
-        # цифровой биквадратный блок
-        # через каскадное включение
-        # рекурсивного и нерекурсивного фильтров
-        y = []
-        for xi in x[:5]:
-
-            # промежуточный сигнал
-            wi = []
-
-            # итоговый сигнал
-            yi = []
-
-            # включение рекурсивного фильтра
-            for num, val in enumerate(xi):
-                if num <= 1:
-                    wi.append(val)  # val или 0
-                else:
-                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
-
-            # включение нерекурсивного фильтра
-            for numw, valw in enumerate(wi):
-                if numw <= 1:
-                    yi.append(valw)  # val или 0
-                else:
-                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
-
-            y.append(yi)
-
-        y = np.array(y)
-
-        # среднеквадратичное значение
-
-        # Энергия j-го стробирующего блока по каналам
-        zij = [[], []]
-
-        # дважды отфильтрованный сигнал разбиваем на два канала
-        for zni, zi in enumerate(y):
-
-            # канал разбиваем на Т-интерваллы (без хвоста)
-
-            step_seg = int(sr * T)
-            segments = np.array([zi[i:i + step_seg] for i in range(0, len(zi), int(step_seg))])
-            if len(segments[-1]) < step_seg:
-                segments = segments[:-1]
-
-            # Т-интерваллы (каждый) разбиваем на Тg-интерваллы с перекрытием в 75%
-            for T_int in segments:
-
-                step_seg = int(sr * Tg)
-                segments_Tg = [T_int[i:i+step_seg] for i in range(0, T_itr*int(step_seg/4), int(step_seg/4))]
-
-                # вычисляем энергию каждого Tg-интервала
-                for Tg_int in segments_Tg:
-                    zj = (1 / len(Tg_int)) * sum(Tg_int * Tg_int)
-
-                    zij[zni].append(zj)
-
-        G = [1, 1, 1, 1.41, 1.41]  # весовые коэф-ты каналов
-
-        # Стробированная громкость в интервале измерения T
-        lkg = []
-
-        for tj in range(len(segments)):
-
-            sumij = []
-
-            for ti in range(len(y)):
-                sumij.append(G[ti] * (sum(zij[ti][tj * T_itr:tj * T_itr + T_itr]) / T_itr))
-
-            lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
-
-        return lkg
-
-    # ----------------------------------------------------------------------------------------------
-
     def get_defects_click(self, dlist):
         """
         Получение дефектов click.
@@ -889,32 +746,6 @@ class Chunk:
             dlist.add(self.Parent.FileName, self.Channel, 'satur',
                       self.Offset + self.specpos_to_time(interval[0]),
                       self.Offset + self.specpos_to_time(interval[1]))
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_loud(self, dlist):
-        """
-        Получение дефектов loud.
-
-        :param dlist: Список дефектов.
-        """
-
-        if self.Parent.SampleRate != 48000:
-            # Для SampleRate, отличного от 48000 данный алгоритм по стандарту неприменим.
-            # Просто игнорируем его применение.
-            return
-
-        # Гарантированно низкое значение.
-        max_lev = -100.0
-
-        # Достаем максимум звука из записи.
-        levs = self.get_volume_level()
-        if len(levs) > 0:
-            max_lev = max(levs)
-
-        if max_lev > self.Parent.Settings.Loud.Thr:
-            dlist.add(self.Parent.FileName, self.Channel, 'loud',
-                      self.Offset, self.Offset + self.Duration)
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1222,6 +1053,188 @@ class WAV:
             chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
+    def get_volume_level(self,
+                         semple = None,
+                         tg=0.4,  # 400 мс
+                         t_itr=10,  # количество строблений
+                         ):
+
+        '''
+        :param tg: Размер стробления (сек).
+        :param t_itr: Количество строблений на участке Т.
+
+        :return: Список громкости звука на участках длиной Т.
+        '''
+
+        # определение уровня громкости
+        # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
+        # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
+
+        t = round(t_itr * 0.1 + tg - 0.1, 1) # 1,3 сек - длина Т участка
+
+        x = semple
+        sr = self.SampleRate
+
+        # К-фильтр частот
+        # коэф-ты при sr = 48000:
+        a1 = 1.69065929318241 * (-1)
+        a2 = 0.73248077421585
+        b0 = 1.53512485958697
+        b1 = 2.69169618940638 * (-1)
+        b2 = 1.19839281085285
+
+        # цифровой биквадратный блок
+        # через каскадное включение
+        # рекурсивного и нерекурсивного фильтров
+        y = []
+        for xi in x[:5]:
+
+            # промежуточный сигнал
+            wi = []
+
+            # итоговый сигнал
+            yi = []
+
+            # включение рекурсивного фильтра
+            for num, val in enumerate(xi):
+                if num <= 1:
+                    wi.append(val)  # val или 0
+                else:
+                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
+
+            # включение нерекурсивного фильтра
+            for numw, valw in enumerate(wi):
+                if numw <= 1:
+                    yi.append(valw)  # val или 0
+                else:
+                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
+
+            y.append(yi)
+
+        y = np.array(y)
+
+        # К-фильтр частот
+        # коэф-ты при sr = 48000:
+        a1 = 1.99004745483398 * (-1)
+        a2 = 0.99007225036621
+        b0 = 1.0
+        b1 = 2.0 * (-1)
+        b2 = 1.0
+
+        x = y
+
+        # цифровой биквадратный блок
+        # через каскадное включение
+        # рекурсивного и нерекурсивного фильтров
+        y = []
+        for xi in x[:5]:
+
+            # промежуточный сигнал
+            wi = []
+
+            # итоговый сигнал
+            yi = []
+
+            # включение рекурсивного фильтра
+            for num, val in enumerate(xi):
+                if num <= 1:
+                    wi.append(val)  # val или 0
+                else:
+                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
+
+            # включение нерекурсивного фильтра
+            for numw, valw in enumerate(wi):
+                if numw <= 1:
+                    yi.append(valw)  # val или 0
+                else:
+                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
+
+            y.append(yi)
+
+        y = np.array(y)
+
+        # среднеквадратичное значение
+
+        # Энергия j-го стробирующего блока по каналам
+        zij = [[], []]
+
+        # дважды отфильтрованный сигнал разбиваем на два канала
+        for zni, zi in enumerate(y):
+
+            # канал разбиваем на Т-интерваллы (без хвоста)
+
+            step_seg = int(sr * t)
+            segments = [zi[i:i + step_seg] for i in range(0, len(zi), int(step_seg))]
+            if len(segments[-1]) < step_seg:
+                segments = segments[:-1]
+            segments = np.array(segments)
+
+            # Т-интерваллы (каждый) разбиваем на Тg-интерваллы с перекрытием в 75%
+            for t_int in segments:
+
+                step_seg = int(sr * tg)
+                segments_tg = [t_int[i:i+step_seg] for i in range(0, t_itr * int(step_seg / 4), int(step_seg / 4))]
+
+                # вычисляем энергию каждого Tg-интервала
+                for tg_int in segments_tg:
+                    zj = (1 / len(tg_int)) * sum(tg_int * tg_int)
+
+                    zij[zni].append(zj)
+
+        g = [1, 1, 1, 1.41, 1.41]  # весовые коэф-ты каналов
+
+        # Стробированная громкость в интервале измерения T
+        lkg = []
+
+        for tj in range(len(segments)):
+
+            sumij = []
+
+            for ti in range(len(y)):
+                sumij.append(g[ti] * (sum(zij[ti][tj * t_itr:tj * t_itr + t_itr]) / t_itr))
+
+            lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
+
+        return lkg
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_loud(self, dlist):
+        """
+        Получение дефектов loud.
+
+        :param dlist: Список дефектов.
+        """
+
+        if self.SampleRate != 48000:
+            # Для SampleRate, отличного от 48000 данный алгоритм по стандарту неприменим.
+            # Просто игнорируем его применение.
+            return
+
+        # Гарантированно низкое значение.
+        max_lev = -100.0
+
+        s = Separator(self.Duration, self.Settings.Loud.Sep)
+        chunk_coords = s.get_next()
+
+        while chunk_coords:
+            ch0, ch1 = self.get_chunks_pair(chunk_coords)
+
+            ch = [ch0.Y, ch1.Y]
+
+            # Достаем максимум звука из записи.
+            levs = self.get_volume_level(ch)
+
+            if len(levs) > 0:
+                max_lev = max(levs)
+
+            if max_lev > self.Settings.Loud.Thr:
+                dlist.add(self.FileName, -1, 'loud',
+                          ch0.Offset, ch0.Offset + ch0.Duration)
+
+            chunk_coords = s.get_next()
+
+    # ----------------------------------------------------------------------------------------------
 
     def get_defects_asnc(self, dlist):
         """
@@ -1373,26 +1386,6 @@ class WAV:
                 ch = self.get_chunk(channel_num, chunk_coords)
                 ch.generate_spectres()
                 ch.get_defects_satur(defects)
-                chunk_coords = s.get_next()
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_loud(self, defects):
-        """
-        Получение дефектов loud.
-
-        :param defects: Список дефектов.
-        """
-
-        # Определение дефекта loud - превышение уровня звука.
-
-        for channel_num in range(self.channels_count()):
-            s = Separator(self.Duration, self.Settings.Loud.Sep)
-
-            chunk_coords = s.get_next()
-            while chunk_coords:
-                ch = self.get_chunk(channel_num, chunk_coords)
-                ch.get_defects_loud(defects)
                 chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
