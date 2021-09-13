@@ -1070,88 +1070,25 @@ class WAV:
         # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
         # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
 
-        t = round(t_itr * 0.1 + tg - 0.1, 1) # 1,3 сек - длина Т участка
+        # t = round(t_itr * 0.1 + tg - 0.1, 1) # 1,3 сек - длина Т участка
+        t = 1.3
 
         x = semple
         sr = self.SampleRate
 
         # К-фильтр частот
         # коэф-ты при sr = 48000:
-        a1 = 1.69065929318241 * (-1)
-        a2 = 0.73248077421585
-        b0 = 1.53512485958697
-        b1 = 2.69169618940638 * (-1)
-        b2 = 1.19839281085285
+        a = [1.0, -1.69065929318241, 0.73248077421585]
+        b = [1.53512485958697, -2.69169618940638, 1.19839281085285]
 
-        # цифровой биквадратный блок
-        # через каскадное включение
-        # рекурсивного и нерекурсивного фильтров
-        y = []
-        for xi in x[:5]:
-
-            # промежуточный сигнал
-            wi = []
-
-            # итоговый сигнал
-            yi = []
-
-            # включение рекурсивного фильтра
-            for num, val in enumerate(xi):
-                if num <= 1:
-                    wi.append(val)  # val или 0
-                else:
-                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
-
-            # включение нерекурсивного фильтра
-            for numw, valw in enumerate(wi):
-                if numw <= 1:
-                    yi.append(valw)  # val или 0
-                else:
-                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
-
-            y.append(yi)
-
-        y = np.array(y)
+        x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
 
         # К-фильтр частот
         # коэф-ты при sr = 48000:
-        a1 = 1.99004745483398 * (-1)
-        a2 = 0.99007225036621
-        b0 = 1.0
-        b1 = 2.0 * (-1)
-        b2 = 1.0
+        a = [1.0, -1.99004745483398, 0.99007225036621]
+        b = [1.0, -2.0, 1.0]
 
-        x = y
-
-        # цифровой биквадратный блок
-        # через каскадное включение
-        # рекурсивного и нерекурсивного фильтров
-        y = []
-        for xi in x[:5]:
-
-            # промежуточный сигнал
-            wi = []
-
-            # итоговый сигнал
-            yi = []
-
-            # включение рекурсивного фильтра
-            for num, val in enumerate(xi):
-                if num <= 1:
-                    wi.append(val)  # val или 0
-                else:
-                    wi.append(xi[num] - a1 * wi[num - 1] - a2 * wi[num - 2])
-
-            # включение нерекурсивного фильтра
-            for numw, valw in enumerate(wi):
-                if numw <= 1:
-                    yi.append(valw)  # val или 0
-                else:
-                    yi.append(b0 * wi[numw] + b1 * wi[numw - 1] + b2 * wi[numw - 2])
-
-            y.append(yi)
-
-        y = np.array(y)
+        x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
 
         # среднеквадратичное значение
 
@@ -1159,7 +1096,7 @@ class WAV:
         zij = [[], []]
 
         # дважды отфильтрованный сигнал разбиваем на два канала
-        for zni, zi in enumerate(y):
+        for zni, zi in enumerate(x):
 
             # канал разбиваем на Т-интерваллы (без хвоста)
 
@@ -1177,6 +1114,7 @@ class WAV:
 
                 # вычисляем энергию каждого Tg-интервала
                 for tg_int in segments_tg:
+
                     zj = (1 / len(tg_int)) * sum(tg_int * tg_int)
 
                     zij[zni].append(zj)
@@ -1190,7 +1128,7 @@ class WAV:
 
             sumij = []
 
-            for ti in range(len(y)):
+            for ti in range(len(x)):
                 sumij.append(g[ti] * (sum(zij[ti][tj * t_itr:tj * t_itr + t_itr]) / t_itr))
 
             lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
