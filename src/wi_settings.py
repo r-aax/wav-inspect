@@ -425,7 +425,7 @@ defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
                                             power_thr=0.2)
 
 defect_loud_settings = DefectLoudSettings(sep=(10.0, 1.0),
-                                          thr=-15.0)
+                                          thr=-12.0)
 
 defect_dbl_settings = DefectDblSettings(sep=(30.0, 4.0),
                                         top=100,
