@@ -965,7 +965,7 @@ class WAV:
 
         # Обнаружение дефекта глухой записи.
         # Решение принимается на основе среднего значения ортоцентра нормализованной спектрограммы.
-        # При этом ортоцентр спектрограммы дает адекватное решение для учатков тишины
+        # При этом ортоцентр спектрограммы дает адекватное решение для участков тишины
         # (ортоцентр на абсолютной тишине находится на уровне 50%, что позволяет не трактовать
         # тишину как глухую запись).
         # При этом ортоцентр вычисляется из нормализованной спектрограммы прямым счетом
@@ -992,6 +992,16 @@ class WAV:
 
         :param defects: Список дефектов.
         """
+
+        # Обнаружение дефекта глухой записи.
+        # Детектирование происходит в три основных этапа.
+        # Частотная спектрограмма сигнала анализируется на наличие тишины
+        # (низкочастотных реликтовых колебаний амплитуды сигнала возле нуля),
+        # участки которой обнуляются.
+        # Спектрограмма сортируется по вертикальной оси и 10% нижней части спектрограммы,
+        # содержащую в себе большую часть частот исключается из расчетов.
+        # Сравнение процента оставшихся пустот с заданным уровнем,
+        # что в конечном итоге и определяет наличие или отсутствие исследуемого дефекта.
 
         for channel_num in range(self.channels_count()):
             s = Separator(self.Duration, self.Settings.Muted2.Sep)
@@ -1049,126 +1059,6 @@ class WAV:
                         dlist.add(self.FileName, ch.Channel, 'echo',
                                   ch.Offset + i * (ln / self.SampleRate),
                                   ch.Offset + (i + 1) * (ln / self.SampleRate))
-
-            chunk_coords = s.get_next()
-
-    # ----------------------------------------------------------------------------------------------
-    def get_volume_level(self,
-                         semple = None,
-                         tg=0.4,  # 400 мс
-                         t_itr=10,  # количество строблений
-                         ):
-
-        '''
-        :param tg: Размер стробления (сек).
-        :param t_itr: Количество строблений на участке Т.
-
-        :return: Список громкости звука на участках длиной Т.
-        '''
-
-        # определение уровня громкости
-        # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
-        # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
-
-        # t = round(t_itr * 0.1 + tg - 0.1, 1) # 1,3 сек - длина Т участка
-        t = 1.3
-
-        x = semple
-        sr = self.SampleRate
-
-        # К-фильтр частот
-        # коэф-ты при sr = 48000:
-        a = [1.0, -1.69065929318241, 0.73248077421585]
-        b = [1.53512485958697, -2.69169618940638, 1.19839281085285]
-
-        x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
-
-        # К-фильтр частот
-        # коэф-ты при sr = 48000:
-        a = [1.0, -1.99004745483398, 0.99007225036621]
-        b = [1.0, -2.0, 1.0]
-
-        x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
-
-        # среднеквадратичное значение
-
-        # Энергия j-го стробирующего блока по каналам
-        zij = [[], []]
-
-        # дважды отфильтрованный сигнал разбиваем на два канала
-        for zni, zi in enumerate(x):
-
-            # канал разбиваем на Т-интерваллы (без хвоста)
-
-            step_seg = int(sr * t)
-            segments = [zi[i:i + step_seg] for i in range(0, len(zi), int(step_seg))]
-            if len(segments[-1]) < step_seg:
-                segments = segments[:-1]
-            segments = np.array(segments)
-
-            # Т-интерваллы (каждый) разбиваем на Тg-интерваллы с перекрытием в 75%
-            for t_int in segments:
-
-                step_seg = int(sr * tg)
-                segments_tg = [t_int[i:i+step_seg] for i in range(0, t_itr * int(step_seg / 4), int(step_seg / 4))]
-
-                # вычисляем энергию каждого Tg-интервала
-                for tg_int in segments_tg:
-
-                    zj = (1 / len(tg_int)) * sum(tg_int * tg_int)
-
-                    zij[zni].append(zj)
-
-        g = [1, 1, 1, 1.41, 1.41]  # весовые коэф-ты каналов
-
-        # Стробированная громкость в интервале измерения T
-        lkg = []
-
-        for tj in range(len(segments)):
-
-            sumij = []
-
-            for ti in range(len(x)):
-                sumij.append(g[ti] * (sum(zij[ti][tj * t_itr:tj * t_itr + t_itr]) / t_itr))
-
-            lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
-
-        return lkg
-
-    # ----------------------------------------------------------------------------------------------
-
-    def get_defects_loud(self, dlist):
-        """
-        Получение дефектов loud.
-
-        :param dlist: Список дефектов.
-        """
-
-        if self.SampleRate != 48000:
-            # Для SampleRate, отличного от 48000 данный алгоритм по стандарту неприменим.
-            # Просто игнорируем его применение.
-            return
-
-        s = Separator(self.Duration, self.Settings.Loud.Sep)
-        chunk_coords = s.get_next()
-
-        while chunk_coords:
-            ch0, ch1 = self.get_chunks_pair(chunk_coords)
-
-            ch = [ch0.Y, ch1.Y]
-
-            # Достаем максимум звука из записи.
-            levs = self.get_volume_level(ch)
-
-            # Гарантированно низкое значение.
-            max_lev = -100.0
-
-            if len(levs) > 0:
-                max_lev = max(levs)
-
-            if max_lev > self.Settings.Loud.Thr:
-                dlist.add(self.FileName, -1, 'loud',
-                          ch0.Offset, ch0.Offset + ch0.Duration)
 
             chunk_coords = s.get_next()
 
@@ -1293,6 +1183,14 @@ class WAV:
         :param defects: Список дефектов.
         """
 
+        # Детектирования высокочастотного гула в диапазоне частот от 12000 Гц и выше
+        # (в основном в исследовании встречались записи с частотой гула до 20000 Гц).
+        # Нормализованная спектрограмма сортируется по интенсивности вдоль частот,
+        # что приводит к тому, что в верхних частотах остается ярко выраженная линия,
+        # характеризующая данный дефект.
+        # Детектирование дефекта происходит путем анализа последних трех процентов
+        # отсортированной спектрограммы в верхних частотах на предмет наличия горизонтальных линий.
+
         for channel_num in range(self.channels_count()):
             s = Separator(self.Duration, self.Settings.Dense.Sep)
 
@@ -1325,6 +1223,47 @@ class WAV:
                 ch.generate_spectres()
                 ch.get_defects_satur(defects)
                 chunk_coords = s.get_next()
+
+    # ----------------------------------------------------------------------------------------------
+
+    def get_defects_loud(self, dlist):
+        """
+        Получение дефектов loud.
+
+        :param dlist: Список дефектов.
+        """
+
+        # Метод анализа субъективной громкости программ и истинного пикового уровня сигналов.
+        # алгоритм данного метода основан на материалах:РЕКОМЕНДАЦИЯ МСЭ-R BS.1770-4 (10/2015)
+        # Алгоритмы измерения громкости звуковых программ и истинного пикового уровня звукового сигнала
+
+        if self.SampleRate != 48000:
+            # Для SampleRate, отличного от 48000 данный алгоритм по стандарту неприменим.
+            # Просто игнорируем его применение.
+            return
+
+        s = Separator(self.Duration, self.Settings.Loud.Sep)
+        chunk_coords = s.get_next()
+
+        while chunk_coords:
+            ch0, ch1 = self.get_chunks_pair(chunk_coords)
+
+            ch = [ch0.Y, ch1.Y]
+
+            # Достаем максимум звука из записи.
+            levs = wi_utils.get_volume_level_BS_1770_4(ch, self.SampleRate)
+
+            # Гарантированно низкое значение.
+            max_lev = -100.0
+
+            if len(levs) > 0:
+                max_lev = max(levs)
+
+            if max_lev > self.Settings.Loud.Thr:
+                dlist.add(self.FileName, -1, 'loud',
+                          ch0.Offset, ch0.Offset + ch0.Duration)
+
+            chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1501,17 +1440,17 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         defects_names=
             [
-                'click',
-                'muted',
-                'muted2',
-                'echo',
-                'asnc',
-                'diff',
-                'hum',
-                'dense',
-                'satur',
-                'loud',
-                'dbl'
+                # 'click',
+                # 'muted',
+                # 'muted2',
+                # 'echo',
+                # 'asnc',
+                # 'diff',
+                # 'hum',
+                # 'dense',
+                # 'satur',
+                'loud'
+                # 'dbl'
             ])
 
 # ==================================================================================================

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import operator
 import numpy as np
 import cv2
+import scipy
+import math
 
 
 # ==================================================================================================
@@ -359,6 +361,84 @@ def show_map(m, figsize=(20, 8)):
 
 # ==================================================================================================
 
+def get_volume_level_BS_1770_4(sample=None, samplerate=None, tg=0.4, t_itr=10):
+    '''
+    :param tg: Размер стробления (сек).
+    :param t_itr: Количество строблений на участке Т.
+
+    :return: Список громкости звука на участках длиной Т.
+    '''
+
+    # определение уровня громкости
+    # https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1770-4-201510-I!!PDF-R.pdf
+    # https://tech.ebu.ch/docs/tech/Tech3344-2011-RUS.pdf
+
+    # t = round(t_itr * 0.1 + tg - 0.1, 1) # 1,3 сек - длина Т участка
+    t = 1.3
+
+    x = sample
+    sr = samplerate
+
+    # К-фильтр частот
+    # коэф-ты при sr = 48000:
+    a = [1.0, -1.69065929318241, 0.73248077421585]
+    b = [1.53512485958697, -2.69169618940638, 1.19839281085285]
+
+    x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
+
+    # К-фильтр частот
+    # коэф-ты при sr = 48000:
+    a = [1.0, -1.99004745483398, 0.99007225036621]
+    b = [1.0, -2.0, 1.0]
+
+    x = scipy.signal.lfilter(b, a, x, axis=-1, zi=None)
+
+    # среднеквадратичное значение
+
+    # Энергия j-го стробирующего блока по каналам
+    zij = [[], []]
+
+    # дважды отфильтрованный сигнал разбиваем на два канала
+    for zni, zi in enumerate(x):
+
+        # канал разбиваем на Т-интерваллы (без хвоста)
+
+        step_seg = int(sr * t)
+        segments = [zi[i:i + step_seg] for i in range(0, len(zi), int(step_seg))]
+        if len(segments[-1]) < step_seg:
+            segments = segments[:-1]
+        segments = np.array(segments)
+
+        # Т-интерваллы (каждый) разбиваем на Тg-интерваллы с перекрытием в 75%
+        for t_int in segments:
+
+            step_seg = int(sr * tg)
+            segments_tg = [t_int[i:i+step_seg] for i in range(0, t_itr * int(step_seg / 4), int(step_seg / 4))]
+
+            # вычисляем энергию каждого Tg-интервала
+            for tg_int in segments_tg:
+
+                zj = (1 / len(tg_int)) * sum(tg_int * tg_int)
+
+                zij[zni].append(zj)
+
+    g = [1, 1, 1, 1.41, 1.41]  # весовые коэф-ты каналов
+
+    # Стробированная громкость в интервале измерения T
+    lkg = []
+
+    for tj in range(len(segments)):
+
+        sumij = []
+
+        for ti in range(len(x)):
+            sumij.append(g[ti] * (sum(zij[ti][tj * t_itr:tj * t_itr + t_itr]) / t_itr))
+
+        lkg.append(-0.691 + 10 * math.log10(sum(sumij)))
+
+    return lkg
+
+# ==================================================================================================
 
 if __name__ == '__main__':
 
