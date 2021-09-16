@@ -1440,17 +1440,17 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         defects_names=
             [
-                # 'click',
-                # 'muted',
-                # 'muted2',
-                # 'echo',
-                # 'asnc',
-                # 'diff',
-                # 'hum',
-                # 'dense',
-                # 'satur',
-                'loud'
-                # 'dbl'
+                'click',
+                'muted',
+                'muted2',
+                'echo',
+                'asnc',
+                'diff',
+                'hum',
+                'dense',
+                'satur',
+                'loud',
+                'dbl'
             ])
 
 # ==================================================================================================
