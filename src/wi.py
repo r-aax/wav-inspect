@@ -738,14 +738,56 @@ class Chunk:
         """
 
         r = librosa.feature.rms(S=self.ASpectre)[0]
+        # r = librosa.feature.rms(y=self.Y)[0]
         rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.Satur.FilterWidth)
-        m = [(rsi > self.Parent.Settings.Satur.PowerThr) for rsi in rs]
-        intervals = wi_utils.markers_true_intervals(m)
+        # m = [(rsi > self.Parent.Settings.Satur.PowerThr) for rsi in rs]
+        m = [rsn for rsn, rsi in enumerate(rs) if rsi > self.Parent.Settings.Satur.PowerThr]
+        # intervals = wi_utils.markers_true_intervals(m)
 
-        for interval in intervals:
-            dlist.add(self.Parent.FileName, self.Channel, 'satur',
-                      self.Offset + self.specpos_to_time(interval[0]),
-                      self.Offset + self.specpos_to_time(interval[1]))
+        # проверка наклона графика сигнала
+        # res = [i for i in m if abs(rs[i+1] - rs[i-1])/2 < 0.01]
+        res = []
+        for i in m:
+            if i+1 >= len(rs):
+                a = rs[i]
+                b = rs[i - 1]
+            elif i-1 < 0:
+                a = rs[i + 1]
+                b = rs[i]
+            else:
+                a = rs[i + 1]
+                b = rs[i - 1]
+            if abs(a - b) / 2 < 0.01:
+                res.append(i)
+
+        # проверка начилия фреймов для обработки
+        if len(res) > 1:
+
+            # формирование интервалов
+            intervals = []
+            if len(res) != 0:
+
+                for n, i in enumerate(res):
+
+                    if not intervals:
+                        intervals.append([i])
+
+                    elif len(intervals[-1]) == 2 and i == res[n - 1] + 1 and n != len(res) - 1:
+                        intervals.append([res[n - 1]])
+
+                    elif i == res[n - 1] + 1 and len(intervals[-1]) == 1 and n != len(res) - 1:
+                        continue
+
+                    elif i != res[n - 1] + 1 and len(intervals[-1]) == 1:
+                        intervals[-1].append(res[n - 1])
+
+                    elif i == res[n - 1] + 1 and len(intervals[-1]) == 1 and n == len(res) - 1:
+                        intervals[-1].append(i)
+
+            for interval in intervals:
+                dlist.add(self.Parent.FileName, self.Channel, 'over load',
+                          self.Offset + self.specpos_to_time(interval[0]),
+                          self.Offset + self.specpos_to_time(interval[1]))
 
     # ----------------------------------------------------------------------------------------------
 

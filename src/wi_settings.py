@@ -421,7 +421,7 @@ defect_dense_settings = DefectDenseSettings(sep=(30.0, 0.0),
                                             max_hz=900)
 
 defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
-                                            filter_width=32,
+                                            filter_width=16,
                                             power_thr=0.2)
 
 defect_loud_settings = DefectLoudSettings(sep=(10.0, 1.0),
