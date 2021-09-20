@@ -247,9 +247,9 @@ class DefectDenseSettings:
 # ==================================================================================================
 
 
-class DefectSaturSettings:
+class DefectOverLoadSettings:
     """
-    Настройки дефекта satur.
+    Настройки дефекта over_load.
     """
 
     # ----------------------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ class DefectsSettings:
                  diff,
                  hum,
                  dense,
-                 satur,
+                 over_load,
                  loud,
                  dbl):
         """
@@ -358,7 +358,7 @@ class DefectsSettings:
         :param diff:      Настройки дефекта diff.
         :param hum:       Настройки дефекта hum.
         :param dense:     Настройки дефекта dense.
-        :param satur:     Настройки дефекта satur.
+        :param over_load:     Настройки дефекта over_load.
         :param loud:      Настройки дефекта loud.
         :param dbl:       Найтройки дефекта dbl.
         """
@@ -372,7 +372,7 @@ class DefectsSettings:
         self.Diff = diff
         self.Hum = hum
         self.Dense = dense
-        self.Satur = satur
+        self.OverLoad = over_load
         self.Loud = loud
         self.Dbl = dbl
 
@@ -420,7 +420,7 @@ defect_dense_settings = DefectDenseSettings(sep=(30.0, 0.0),
                                             min_hz=500,
                                             max_hz=900)
 
-defect_satur_settings = DefectSaturSettings(sep=(10.0, 2.0),
+defect_over_load_settings = DefectOverLoadSettings(sep=(10.0, 2.0),
                                             filter_width=16,
                                             power_thr=0.2)
 
@@ -440,7 +440,7 @@ defects_settings = DefectsSettings(limits_db=(-50.0, 50.0),
                                    diff=defect_diff_settings,
                                    hum=defect_hum_settings,
                                    dense=defect_dense_settings,
-                                   satur=defect_satur_settings,
+                                   over_load=defect_over_load_settings,
                                    loud=defect_loud_settings,
                                    dbl=defect_dbl_settings)
 

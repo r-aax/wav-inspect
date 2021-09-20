@@ -730,59 +730,27 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_satur(self, dlist):
+    def get_defects_over_load(self, dlist):
         """
-        Получение дефектов satur.
+        Получение дефектов over_load.
 
         :param dlist: Список дефектов.
         """
 
         r = librosa.feature.rms(S=self.ASpectre)[0]
         # r = librosa.feature.rms(y=self.Y)[0]
-        rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.Satur.FilterWidth)
+        rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.OverLoad.FilterWidth)
         # m = [(rsi > self.Parent.Settings.Satur.PowerThr) for rsi in rs]
-        m = [rsn for rsn, rsi in enumerate(rs) if rsi > self.Parent.Settings.Satur.PowerThr]
+        m = [rsn for rsn, rsi in enumerate(rs) if rsi > self.Parent.Settings.OverLoad.PowerThr]
         # intervals = wi_utils.markers_true_intervals(m)
 
-        # проверка наклона графика сигнала
-        # res = [i for i in m if abs(rs[i+1] - rs[i-1])/2 < 0.01]
-        res = []
-        for i in m:
-            if i+1 >= len(rs):
-                a = rs[i]
-                b = rs[i - 1]
-            elif i-1 < 0:
-                a = rs[i + 1]
-                b = rs[i]
-            else:
-                a = rs[i + 1]
-                b = rs[i - 1]
-            if abs(a - b) / 2 < 0.01:
-                res.append(i)
+        res = wi_utils.diff_signal(rs, m)
 
         # проверка начилия фреймов для обработки
         if len(res) > 1:
 
             # формирование интервалов
-            intervals = []
-            if len(res) != 0:
-
-                for n, i in enumerate(res):
-
-                    if not intervals:
-                        intervals.append([i])
-
-                    elif len(intervals[-1]) == 2 and i == res[n - 1] + 1 and n != len(res) - 1:
-                        intervals.append([res[n - 1]])
-
-                    elif i == res[n - 1] + 1 and len(intervals[-1]) == 1 and n != len(res) - 1:
-                        continue
-
-                    elif i != res[n - 1] + 1 and len(intervals[-1]) == 1:
-                        intervals[-1].append(res[n - 1])
-
-                    elif i == res[n - 1] + 1 and len(intervals[-1]) == 1 and n == len(res) - 1:
-                        intervals[-1].append(i)
+            intervals = wi_utils.markers_val_intervals(res)
 
             for interval in intervals:
                 dlist.add(self.Parent.FileName, self.Channel, 'over load',
@@ -1245,9 +1213,9 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_satur(self, defects):
+    def get_defects_over_load(self, defects):
         """
-        Получение дефектов satur.
+        Получение дефектов over_load.
 
         :param defects: Список дефектов.
         """
@@ -1257,13 +1225,13 @@ class WAV:
         # полученной по спектрограмме амплидуд.
 
         for channel_num in range(self.channels_count()):
-            s = Separator(self.Duration, self.Settings.Satur.Sep)
+            s = Separator(self.Duration, self.Settings.OverLoad.Sep)
 
             chunk_coords = s.get_next()
             while chunk_coords:
                 ch = self.get_chunk(channel_num, chunk_coords)
                 ch.generate_spectres()
-                ch.get_defects_satur(defects)
+                ch.get_defects_over_load(defects)
                 chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
@@ -1364,7 +1332,7 @@ class WAV:
              'diff'   : self.get_defects_diff,
              'hum'    : self.get_defects_hum,
              'dense'  : self.get_defects_dense,
-             'satur'  : self.get_defects_satur,
+             'over_load': self.get_defects_over_load,
              'loud'   : self.get_defects_loud,
              'dbl'    : self.get_defects_dbl}
 
@@ -1482,17 +1450,17 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         defects_names=
             [
-                'click',
-                'muted',
-                'muted2',
-                'echo',
-                'asnc',
-                'diff',
-                'hum',
-                'dense',
-                'satur',
-                'loud',
-                'dbl'
+                # 'click',
+                # 'muted',
+                # 'muted2',
+                # 'echo',
+                # 'asnc',
+                # 'diff',
+                # 'hum',
+                # 'dense',
+                'over_load',
+                # 'loud',
+                # 'dbl'
             ])
 
 # ==================================================================================================

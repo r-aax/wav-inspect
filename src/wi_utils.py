@@ -26,6 +26,7 @@ def zipwith(a, b, f):
 
     return [f(ai, bi) for (ai, bi) in zip(a, b)]
 
+
 # ==================================================================================================
 
 
@@ -39,6 +40,7 @@ def unzip(a):
     """
 
     return tuple([list(ai) for ai in zip(*a)])
+
 
 # ==================================================================================================
 
@@ -54,6 +56,7 @@ def split(ar, pos):
     """
 
     return ar[:pos], ar[pos:]
+
 
 # ==================================================================================================
 
@@ -77,6 +80,7 @@ def indices_slice_array(ar_len, start, part_len, step):
            if (i - start) % step == 0]
 
     return idx
+
 
 # ==================================================================================================
 
@@ -104,6 +108,7 @@ def min_max_extended(a, limits_before_sort, limits_after_sort):
 
     return x[0], x[-1]
 
+
 # ==================================================================================================
 
 
@@ -120,6 +125,7 @@ def array_orthocenter(a):
 
     return sum([a[i] * i for i in range(ln)]) / sum(a)
 
+
 # ==================================================================================================
 
 
@@ -134,9 +140,10 @@ def array_weight_quartile(a):
 
     ln = len(a)
     ln4 = ln // 4
-    q = np.array([sum(a[:ln4]), sum(a[ln4:2*ln4]), sum(a[2*ln4:3*ln4]), sum(a[3*ln4:])])
+    q = np.array([sum(a[:ln4]), sum(a[ln4:2 * ln4]), sum(a[2 * ln4:3 * ln4]), sum(a[3 * ln4:])])
 
     return np.argmax(q)
+
 
 # ==================================================================================================
 
@@ -153,6 +160,7 @@ def predicated_count(a, p):
 
     return len([1 for e in a if p(e)])
 
+
 # ==================================================================================================
 
 
@@ -167,6 +175,7 @@ def predicated_part(a, p):
     """
 
     return predicated_count(a, p) / len(a)
+
 
 # ==================================================================================================
 
@@ -206,6 +215,7 @@ def markers_true_intervals(a):
 
     return intervals
 
+
 # ==================================================================================================
 
 
@@ -221,6 +231,7 @@ def operator_prewitt_gx(w=1.0):
     return np.array([[-w, -w, -w],
                      [0.0, 0.0, 0.0],
                      [w, w, w]])
+
 
 # ==================================================================================================
 
@@ -238,6 +249,7 @@ def operator_prewitt_gy(w=1.0):
                      [-w, 0.0, w],
                      [-w, 0.0, w]])
 
+
 # ==================================================================================================
 
 
@@ -254,6 +266,7 @@ def operator_sobel_gx(w=1.0):
                      [0.0, 0.0, 0.0],
                      [w, 2.0 * w, w]])
 
+
 # ==================================================================================================
 
 
@@ -269,6 +282,7 @@ def operator_sobel_gy(w=1.0):
     return np.array([[-w, 0.0, w],
                      [-2.0 * w, 0.0, 2.0 * w],
                      [-w, 0.0, w]])
+
 
 # ==================================================================================================
 
@@ -288,6 +302,7 @@ def apply_filter_2d(src, op):
     # Перед применением фильтра, оператор фильтра тоже нужно транспонировать.
 
     return cv2.filter2D(src, -1, op.transpose())
+
 
 # ==================================================================================================
 
@@ -339,6 +354,7 @@ def show_graph(data, figsize=(20, 8),
 
     plt.show()
 
+
 # ==================================================================================================
 
 
@@ -358,6 +374,7 @@ def show_map(m, figsize=(20, 8)):
     fig.set_figheight(figsize[1])
 
     plt.show()
+
 
 # ==================================================================================================
 
@@ -413,11 +430,10 @@ def get_volume_level_BS_1770_4(sample=None, samplerate=None, tg=0.4, t_itr=10):
         for t_int in segments:
 
             step_seg = int(sr * tg)
-            segments_tg = [t_int[i:i+step_seg] for i in range(0, t_itr * int(step_seg / 4), int(step_seg / 4))]
+            segments_tg = [t_int[i:i + step_seg] for i in range(0, t_itr * int(step_seg / 4), int(step_seg / 4))]
 
             # вычисляем энергию каждого Tg-интервала
             for tg_int in segments_tg:
-
                 zj = (1 / len(tg_int)) * sum(tg_int * tg_int)
 
                 zij[zni].append(zj)
@@ -440,8 +456,72 @@ def get_volume_level_BS_1770_4(sample=None, samplerate=None, tg=0.4, t_itr=10):
 
 # ==================================================================================================
 
-if __name__ == '__main__':
+def markers_val_intervals(list_vals):
+    '''
+    Формирует интервалы величин из списка list_vals
 
+    :param list_vals:  Список возрастающих величин (номера семплов или фреймов)
+    :return: список интервалов
+    '''
+    # формирование интервалов
+    # проверка данных
+    if len(list_vals) > 1:
+
+        intervals = []
+
+        for n, i in enumerate(list_vals):
+
+            if not intervals:
+                intervals.append([i])
+
+            elif len(intervals[-1]) == 2 and i == list_vals[n - 1] + 1 and n != len(list_vals) - 1:
+                intervals.append([list_vals[n - 1]])
+
+            elif i == list_vals[n - 1] + 1 and len(intervals[-1]) == 1 and n != len(list_vals) - 1:
+                continue
+
+            elif i != list_vals[n - 1] + 1 and len(intervals[-1]) == 1:
+                intervals[-1].append(list_vals[n - 1])
+
+            elif i == list_vals[n - 1] + 1 and len(intervals[-1]) == 1 and n == len(list_vals) - 1:
+                intervals[-1].append(i)
+
+        return intervals
+
+# ==================================================================================================
+
+def diff_signal(signal, m):
+    '''
+    проверка производной сигнала на выбранных участках
+
+    :param signal: исходный сигнал
+    :param m: индексы для выборочной проверки
+    :return: отфильтрованный список индексов (отсеяны индексы не пошедшие проверку)
+    '''
+
+    if signal == [] or m == []:
+        return []
+
+    # проверка наклона графика сигнала
+    res = []
+    for i in m:
+        if i + 1 >= len(signal):
+            a = signal[i]
+            b = signal[i - 1]
+        elif i - 1 < 0:
+            a = signal[i + 1]
+            b = signal[i]
+        else:
+            a = signal[i + 1]
+            b = signal[i - 1]
+        if abs(a - b) / 2 < 0.01:
+            res.append(i)
+
+    return res
+
+# ==================================================================================================
+
+if __name__ == '__main__':
     # zipwith
     assert zipwith([1, 2, 3], [2, 3, 4], operator.add) == [3, 5, 7]
     assert zipwith(['a', 'b'], ['1', '2'], lambda x, y: (x, y)) == list(zip(['a', 'b'], ['1', '2']))
