@@ -455,23 +455,23 @@ class Chunk:
         # новый семпл без тишины
         y = self.Y[index_semp]
 
-        S_full, phase = librosa.magphase(librosa.stft(y))
+        s_full, phase = librosa.magphase(librosa.stft(y))
 
-        S_filter = librosa.decompose.nn_filter(S_full,
+        s_filter = librosa.decompose.nn_filter(s_full,
                                                aggregate=np.median,
                                                metric='cosine'
                                                )
 
-        S_filter = np.minimum(S_full, S_filter)
+        s_filter = np.minimum(s_full, s_filter)
 
         margin_v = margin_v
         power = power
 
-        mask_v = librosa.util.softmask(S_full - S_filter,
-                                       margin_v * S_filter,
+        mask_v = librosa.util.softmask(s_full - s_filter,
+                                       margin_v * s_filter,
                                        power=power)
 
-        S_foreground = mask_v * S_full
+        S_foreground = mask_v * s_full
 
         stft = S_foreground * phase
 
@@ -1450,17 +1450,15 @@ if __name__ == '__main__':
         filter_fun=lambda f: True,
         defects_names=
             [
-                # 'click',
-                # 'muted',
-                # 'muted2',
-                # 'echo',
-                # 'asnc',
-                # 'diff',
-                # 'hum',
-                # 'dense',
+                'click',
+                'muted',
+                'muted2',
+                'echo',
+                'asnc',
+                'diff',
+                'hum',
+                'dense',
                 'over_load',
-                # 'loud',
-                # 'dbl'
+                'loud',
+                'dbl'
             ])
-
-# ==================================================================================================
