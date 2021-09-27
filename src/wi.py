@@ -914,24 +914,24 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def summary(self):
-        """
-        Печать общей информации об аудиозаписи.
-        """
-
-        if not self.is_ok():
-            print('Bad WAV audio record!')
-            return
-
-        n = len(self.Channels)
-
-        print('WAV audio record: FileName       = {0}'.format(self.FileName))
-        a = [ch.Y.shape for ch in self.Channels]
-        print('                  Channels       = {0} : {1}'.format(n, a))
-        print('                  SampleRate     = {0}'.format(self.SampleRate))
-        print('                  Duration       = {0:.3f} s'.format(self.Duration))
-        a = [ch.Spectre.shape for ch in self.Channels]
-        print('                  Spectres       = {0} : {1}'.format(n, a))
+    # def summary(self):
+    #     """
+    #     Печать общей информации об аудиозаписи.
+    #     """
+    #
+    #     if not self.is_ok():
+    #         print('Bad WAV audio record!')
+    #         return
+    #
+    #     n = len(self.Channels)
+    #
+    #     print('WAV audio record: FileName       = {0}'.format(self.FileName))
+    #     a = [ch.Y.shape for ch in self.Channels]
+    #     print('                  Channels       = {0} : {1}'.format(n, a))
+    #     print('                  SampleRate     = {0}'.format(self.SampleRate))
+    #     print('                  Duration       = {0:.3f} s'.format(self.Duration))
+    #     a = [ch.Spectre.shape for ch in self.Channels]
+    #     print('                  Spectres       = {0} : {1}'.format(n, a))
 
     # ----------------------------------------------------------------------------------------------
 
@@ -1086,7 +1086,7 @@ class WAV:
         # На основании данного коэффициента могут быть приняты решения:
         #   - если коэффициент близок к 1.0, то имеет место дефект ложного стерео
         #     (мы это не фиксируем, так как таковы практически все аудиозаписи);
-        #   - если коэфициент слишком низкий и положительный, то имеет место
+        #   - если коэффициент слишком низкий и положительный, то имеет место
         #     эффект сильного расхождения, плывущий звук, ощутимые выпадения звука,
         #     запись на слух очевидно дефектная;
         #   - отрицательный коэффициент означает сдвиг по фазе между каналами
