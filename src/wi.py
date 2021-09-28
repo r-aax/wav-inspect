@@ -730,18 +730,18 @@ class Chunk:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_over_load(self, dlist):
+    def get_defects_overload(self, dlist):
         """
-        Получение дефектов over_load.
+        Получение дефектов overload.
 
         :param dlist: Список дефектов.
         """
 
         r = librosa.feature.rms(S=self.ASpectre)[0]
         # r = librosa.feature.rms(y=self.Y)[0]
-        rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.OverLoad.FilterWidth)
+        rs = scipy.ndimage.uniform_filter1d(r, size=self.Parent.Settings.Overload.FilterWidth)
         # m = [(rsi > self.Parent.Settings.Satur.PowerThr) for rsi in rs]
-        m = [rsn for rsn, rsi in enumerate(rs) if rsi > self.Parent.Settings.OverLoad.PowerThr]
+        m = [rsn for rsn, rsi in enumerate(rs) if rsi > self.Parent.Settings.Overload.PowerThr]
         # intervals = wi_utils.markers_true_intervals(m)
 
         res = wi_utils.diff_signal(rs, m)
@@ -753,7 +753,7 @@ class Chunk:
             intervals = wi_utils.markers_val_intervals(res)
 
             for interval in intervals:
-                dlist.add(self.Parent.FileName, self.Channel, 'over load',
+                dlist.add(self.Parent.FileName, self.Channel, 'overload',
                           self.Offset + self.specpos_to_time(interval[0]),
                           self.Offset + self.specpos_to_time(interval[1]))
 
@@ -1213,9 +1213,9 @@ class WAV:
 
     # ----------------------------------------------------------------------------------------------
 
-    def get_defects_over_load(self, defects):
+    def get_defects_overload(self, defects):
         """
-        Получение дефектов over_load.
+        Получение дефектов overload.
 
         :param defects: Список дефектов.
         """
@@ -1225,13 +1225,13 @@ class WAV:
         # полученной по спектрограмме амплидуд.
 
         for channel_num in range(self.channels_count()):
-            s = Separator(self.Duration, self.Settings.OverLoad.Sep)
+            s = Separator(self.Duration, self.Settings.Overload.Sep)
 
             chunk_coords = s.get_next()
             while chunk_coords:
                 ch = self.get_chunk(channel_num, chunk_coords)
                 ch.generate_spectres()
-                ch.get_defects_over_load(defects)
+                ch.get_defects_overload(defects)
                 chunk_coords = s.get_next()
 
     # ----------------------------------------------------------------------------------------------
@@ -1332,7 +1332,7 @@ class WAV:
              'diff'   : self.get_defects_diff,
              'hum'    : self.get_defects_hum,
              'dense'  : self.get_defects_dense,
-             'over_load': self.get_defects_over_load,
+             'overload': self.get_defects_overload,
              'loud'   : self.get_defects_loud,
              'dbl'    : self.get_defects_dbl}
 
@@ -1458,7 +1458,7 @@ if __name__ == '__main__':
                 'diff',
                 'hum',
                 'dense',
-                'over_load',
+                'overload',
                 'loud',
                 'dbl'
             ])
