@@ -406,7 +406,7 @@ defect_echo_settings = DefectEchoSettings(sep=(10.0, 2.0),
 defect_asnc_settings = DefectAsncSettings(sep=(10.0, 5.0),
                                           thr=0.4)
 
-defect_diff_settings = DefectDiffSettings(sep=(5.0, 5.0),
+defect_diff_settings = DefectDiffSettings(sep=(5.0, 1.0),
                                           width_min=10,
                                           thr=0.1)
 
@@ -414,7 +414,7 @@ defect_hum_settings = DefectHumSettings(sep=(10.0, 2.0),
                                         lo_ignore=10.0,
                                         thr=0.51)
 
-defect_dense_settings = DefectDenseSettings(sep=(30.0, 0.0),
+defect_dense_settings = DefectDenseSettings(sep=(30.0, 1.0),
                                             percent=3,
                                             width=4,
                                             min_hz=500,
@@ -424,7 +424,7 @@ defect_overload_settings = DefectOverloadSettings(sep=(10.0, 2.0),
                                             filter_width=16,
                                             power_thr=0.2)
 
-defect_loud_settings = DefectLoudSettings(sep=(10.0, 1.0),
+defect_loud_settings = DefectLoudSettings(sep=(13.0, 1.0),
                                           thr=-12.0)
 
 defect_dbl_settings = DefectDblSettings(sep=(30.0, 4.0),
